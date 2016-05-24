@@ -3,7 +3,10 @@
 % Bringhurst
 \linespread{1.08}
 \setlength{\parindent}{1.08\baselineskip}
+\frenchspacing
 
+\newcommand{\foreign}[1]{\textsl{#1}}
+\newcommand{\etal}{\foreign{et~al.}}
 \newcommand{\acronym}[1]{{\small{#1}}}
 \newcommand{\project}[1]{\textsl{#1}}
 \newcommand{\kepler}{\project{Kepler}}
@@ -15,8 +18,8 @@
 \author{
   Adrian~Price-Whelan~(Columbia,~Princeton),
   David~W.~Hogg~(SCDA,~NYU,~MPIA),
-  Melissa~K.~Ness~(MPIA),
-  Dan~Foreman-Mackey~(UW), others}
+  Melissa~Ness~(MPIA),
+  Daniel~Foreman-Mackey~(UW), others}
 
 \begin{abstract}
 Long-period eclipsing binaries potentially provide extremely precise
@@ -39,5 +42,14 @@ stars---are discussed.
 \end{abstract}
 
 Hello World?
+
+\begin{thebibliography}{24}\raggedright
+\bibitem[Gaulme \etal(2013)]{gaulme}
+  Gaulme, P., McKeever, J., Rawls, M.~L., \etal, 2013, \apj, 767, 82 
+\bibitem[Shapley(1913)]{shapley}
+  Shapley, H., 1913, \apj, 38, 158
+\bibitem[Troup \etal(2016)]{troup}
+  Troup, N.~W., Nidever, D.~L., De Lee, N., \etal, 2016, \aj, 151, 85 
+\end{thebibliography}
 
 \end{document}

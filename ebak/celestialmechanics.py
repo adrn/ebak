@@ -40,13 +40,13 @@ def eccentric_anomaly_from_mean_anomaly(M, e, tol=1e-8, maxiter=100):
     - MAGIC numbers 1e-8, 100
     - totally untested
     """
-    iteration = 0
+    iter = 0
     deltaM = np.Inf
     E = M + e * np.sin(M)
-    while (iteration < maxiter) and (abs(deltaM) > tol):
+    while (iter < maxiter) and (abs(deltaM) > tol):
         deltaM = (M - mean_anomaly_from_eccentric_anomaly(E, e))
         E = E + deltaM / (1. - e * np.cos(E))
-        iteration += 1
+        iter += 1
     return E
 
 def true_anomaly_from_eccentric_anomaly(E, e):
@@ -117,29 +117,31 @@ def rv_from_elements(P, a, sini, e, omega, time, time0):
     - definitely something is wrong -- plots look wrong...!
     """
     dMdt = 2. * np.pi / P
-    M = np.mod((time - time0) * dMdt, 2. * np.pi)
+    M = (time - time0) * dMdt
     E = eccentric_anomaly_from_mean_anomaly(M, e)
     f = true_anomaly_from_eccentric_anomaly(E, e)
     dEdt = d_eccentric_anomaly_d_mean_anomaly(E, e) * dMdt
     dfdt = d_true_anomaly_d_eccentric_anomaly(E, f, e) * dEdt
-    r = a * (1. - e * e) / (1 + e * np.cos(f))
-    rv = r * np.cos(omega + f) * sini * dfdt
+    cf = np.cos(f)
+    r = a * (1. - e * e) / (1 + e * cf)
+    drdt = (a * (1. - e * e) * e * np.sin(f) / (1 + e * cf) ** 2) * dfdt
+    rv = r * np.cos(omega + f) * sini * dfdt + np.sin(omega + f) * sini * drdt
     return rv
 
 if __name__ == "__main__":
     import pylab as plt
     np.random.seed(42)
+    t0 = 0. # d
+    t1 = 400. # d
+    dt = (1. / 24.) # d
+    times = np.arange(t0 + 0.5 * dt, t1)
     for i in range(32):
         suffix = "{:03d}".format(i)
         P = np.exp(np.log(10.) + np.log(400./10.) * np.random.uniform()) # d
         a = (P / 300.) ** (2. / 3.) # made up shit AU
-        e = np.random.uniform()
+        e = 0.99 # testing
         omega = 2. * np.pi * np.random.uniform() # rad
-        t0 = 0. # d
-        t1 = 400. # d
         time0 = t0 + (t1 - t0) * np.random.uniform()
-        dt = (1. / 24.) # d
-        times = np.arange(t0 + 0.5 * dt, t1)
         rvs = np.array([rv_from_elements(P, a, 1.0, e, omega, t, time0) for t in times])
         plt.clf()
         plt.plot(times, rvs, "k-")

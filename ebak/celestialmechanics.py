@@ -98,10 +98,19 @@ def d_true_anomaly_d_eccentric_anomaly(E, f, e):
     assert np.close(cE, (e + cf) / (1. + e * cf))
     return (sE / sf) * (1. - e * e) / (1. + e * cf) ** 2
 
-def rv_from_elements(P, r, sini, e, omega, time, time0):
+def rv_from_elements(P, a, sini, e, omega, time, time0):
     """
+    # inputs:
+    - P: period (d)
+    - a: semi-major axis for star from system barycenter (will be negative for one of the stars?) (AU?)
+    - sini: sine of the inclination
+    - e: eccentricity
+    - omega: perihelion argument parameter from Winn
+    - time: BJD of observation (d)
+    - time0: time phase parameter (d)
+
     # bugs / issues:
-    - probably could be made more efficient!
+    - probably could be made more efficient (there are lots of re-dos of trig calls)
     - totally untested
     """
     dMdt = 2. * np.pi / P
@@ -110,5 +119,6 @@ def rv_from_elements(P, r, sini, e, omega, time, time0):
     f = true_anomaly_from_eccentric_anomaly(E, e)
     dEdt = d_eccentric_anomaly_d_mean_anomaly(E, e) * dMdt
     dfdt = d_true_anomaly_d_eccentric_anomaly(E, f, e) * dEdt
+    r = a * (1. - e * e) / (1 + e * np.cos(f))
     rv = r * np.cos(omega + f) * sini * dfdt
     return rv

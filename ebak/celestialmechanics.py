@@ -100,8 +100,15 @@ def d_true_anomaly_d_eccentric_anomaly(E, f, e):
 
 def rv_from_elements(P, r, sini, e, omega, time, time0):
     """
-    # bugs:
-    - not yet written!
+    # bugs / issues:
+    - probably could be made more efficient!
     - totally untested
     """
+    dMdt = 2. * np.pi / P
+    M = np.mod((time - time0) * dMdt, 2. * np.pi)
+    E = eccentric_anomaly_from_mean_anomaly(M, e)
+    f = true_anomaly_from_eccentric_anomaly(E, e)
+    dEdt = d_eccentric_anomaly_d_mean_anomaly(E, e) * dMdt
+    dfdt = d_true_anomaly_d_eccentric_anomaly(E, f, e) * dEdt
+    rv = r * np.cos(omega + f) * sini * dfdt
     return rv

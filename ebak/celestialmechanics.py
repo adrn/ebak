@@ -107,7 +107,7 @@ def rv_from_elements(P, a, sini, e, omega, time, time0):
     - e: eccentricity
     - omega: perihelion argument parameter from Winn
     - time: BJD of observation (d)
-    - time0: time phase parameter (d)
+    - time0: time of "zeroth" pericenter (d)
 
     # outputs:
     - rv: radial velocity (AU/d ?)

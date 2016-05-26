@@ -12,7 +12,7 @@ Copyright 2016 David W. Hogg (NYU).
 - should I permit inputs of sin and cos instead of just angles?
 - totally untested
 """
-input numpy as np
+import numpy as np
 
 def mean_anomaly_from_eccentric_anomaly(E, e):
     """
@@ -45,7 +45,7 @@ def eccentric_anomaly_from_mean_anomaly(M, e, tol=1e-8, maxiter=100):
     E = M + e * np.sin(M)
     while (iteration < maxiter) and (abs(deltaM) > tol):
         deltaM = (M - mean_anomaly_from_eccentric_anomaly(E, e))
-        E = E + deltaM / (1. - e * cos(E))
+        E = E + deltaM / (1. - e * np.cos(E))
         iteration += 1
     return E
 
@@ -95,8 +95,8 @@ def d_true_anomaly_d_eccentric_anomaly(E, f, e):
     """
     cf, sf = np.cos(f), np.sin(f)
     cE, sE = np.cos(E), np.sin(E)
-    assert np.close(cE, (e + cf) / (1. + e * cf))
-    return (sE / sf) * (1. - e * e) / (1. + e * cf) ** 2
+    assert np.allclose(cE, (e + cf) / (1. + e * cf))
+    return (sE / sf) * (1. - e * e) / ((1. + e * cf) ** 2)
 
 def rv_from_elements(P, a, sini, e, omega, time, time0):
     """
@@ -114,7 +114,7 @@ def rv_from_elements(P, a, sini, e, omega, time, time0):
 
     # bugs / issues:
     - could be made more efficient (there are lots of re-dos of trig calls)
-    - totally untested
+    - definitely something is wrong -- plots look wrong...!
     """
     dMdt = 2. * np.pi / P
     M = np.mod((time - time0) * dMdt, 2. * np.pi)
@@ -125,3 +125,24 @@ def rv_from_elements(P, a, sini, e, omega, time, time0):
     r = a * (1. - e * e) / (1 + e * np.cos(f))
     rv = r * np.cos(omega + f) * sini * dfdt
     return rv
+
+if __name__ == "__main__":
+    import pylab as plt
+    np.random.seed(42)
+    for i in range(32):
+        suffix = "{:03d}".format(i)
+        P = np.exp(np.log(10.) + np.log(400./10.) * np.random.uniform()) # d
+        a = (P / 300.) ** (2. / 3.) # made up shit AU
+        e = np.random.uniform()
+        omega = 2. * np.pi * np.random.uniform() # rad
+        t0 = 0. # d
+        t1 = 400. # d
+        time0 = t0 + (t1 - t0) * np.random.uniform()
+        dt = (1. / 24.) # d
+        times = np.arange(t0 + 0.5 * dt, t1)
+        rvs = np.array([rv_from_elements(P, a, 1.0, e, omega, t, time0) for t in times])
+        plt.clf()
+        plt.plot(times, rvs, "k-")
+        pfn = "rvtest_" + suffix + ".png"
+        print(pfn)
+        plt.savefig(pfn)

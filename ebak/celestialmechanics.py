@@ -102,15 +102,18 @@ def rv_from_elements(P, a, sini, e, omega, time, time0):
     """
     # inputs:
     - P: period (d)
-    - a: semi-major axis for star from system barycenter (will be negative for one of the stars?) (AU?)
+    - a: semi-major axis for star from system barycenter (will be negative for one of the stars?) (AU ?)
     - sini: sine of the inclination
     - e: eccentricity
     - omega: perihelion argument parameter from Winn
     - time: BJD of observation (d)
     - time0: time phase parameter (d)
 
+    # outputs:
+    - rv: radial velocity (AU/d ?)
+
     # bugs / issues:
-    - probably could be made more efficient (there are lots of re-dos of trig calls)
+    - could be made more efficient (there are lots of re-dos of trig calls)
     - totally untested
     """
     dMdt = 2. * np.pi / P

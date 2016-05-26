@@ -4,9 +4,13 @@ Copyright 2016 David W. Hogg (NYU).
 
 # Celestial mechanics for the EBAK project
 
-## Bugs / issues:
-- Should I permit inputs of sin and cos instead of just angles?
-- Totally untested
+## comments:
+- parameterization from Winn http://arxiv.org/abs/1001.2010
+- mean, eccentric, and true anomaly formulae from Wikipedia https://en.wikipedia.org/wiki/Eccentric_anomaly
+
+## bugs / issues:
+- should I permit inputs of sin and cos instead of just angles?
+- totally untested
 """
 input numpy as np
 
@@ -21,7 +25,7 @@ def mean_anomaly_from_eccentric_anomaly(E, e):
     """
     return E - e * np.sin(E)
 
-def eccentric_anomaly_from_mean_anomaly(M, e, tol=1e-8, maxiter=100)
+def eccentric_anomaly_from_mean_anomaly(M, e, tol=1e-8, maxiter=100):
     """
     # inputs:
     - M: mean anomaly (rad)
@@ -32,8 +36,9 @@ def eccentric_anomaly_from_mean_anomaly(M, e, tol=1e-8, maxiter=100)
     # outputs:
     - eccentric anomaly (rad)
 
-    # bugs:
+    # bugs / issues:
     - MAGIC numbers 1e-8, 100
+    - totally untested
     """
     iteration = 0
     deltaM = np.Inf
@@ -52,6 +57,9 @@ def true_anomaly_from_eccentric_anomaly(E, e):
 
     # outputs:
     - f: true anomaly (rad)
+
+    # bugs / issues:
+    - totally untested
     """
     cE, sE = np.cos(E), np.sin(E)
     f = np.arccos((cE - e) / (1.0 - e * cE))
@@ -66,12 +74,15 @@ def d_eccentric_anomaly_d_mean_anomaly(E, e):
 
     # outputs:
     - dE / dM: derivative of one anomaly wrt the other
+
+    # bugs / issues:
+    - totally untested
     """
     return 1. / (1. - e * np.cos(E))
 
 def d_true_anomaly_d_eccentric_anomaly(E, f, e):
     """
-    # inputs:n
+    # inputs:
     - E: eccentric anomaly (rad)
     - f: true anomaly (rad)
     - e: eccentricity
@@ -79,10 +90,18 @@ def d_true_anomaly_d_eccentric_anomaly(E, f, e):
     # outputs:
     - df / dE: derivative of one anomaly wrt the other
 
-    # issues:
+    # bugs / issues:
     - insane assert
     """
     cf, sf = np.cos(f), np.sin(f)
     cE, sE = np.cos(E), np.sin(E)
     assert np.close(cE, (e + cf) / (1. + e * cf))
     return (sE / sf) * (1. - e * e) / (1. + e * cf) ** 2
+
+def rv_from_elements(P, r, sini, e, omega, time, time0):
+    """
+    # bugs:
+    - not yet written!
+    - totally untested
+    """
+    return rv

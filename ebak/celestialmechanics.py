@@ -76,7 +76,7 @@ def d_eccentric_anomaly_d_mean_anomaly(E, e):
     - dE / dM: derivative of one anomaly wrt the other
 
     # bugs / issues:
-    - totally untested
+    - somewhat tested
     """
     return 1. / (1. - e * np.cos(E))
 
@@ -92,11 +92,37 @@ def d_true_anomaly_d_eccentric_anomaly(E, f, e):
 
     # bugs / issues:
     - insane assert
+    - somewhat tested
     """
     cf, sf = np.cos(f), np.sin(f)
     cE, sE = np.cos(E), np.sin(E)
     assert np.allclose(cE, (e + cf) / (1. + e * cf))
-    return (sE / sf) * (1. - e * e) / ((1. + e * cf) ** 2)
+    return (sE / sf) * (1. + e * cf) / (1. - e * cE)
+
+def Z_from_elements(P, a, sini, e, omega, time, time0):
+    """
+    # inputs:
+    - P: period (d)
+    - a: semi-major axis for star from system barycenter (will be negative for one of the stars?) (AU ?)
+    - sini: sine of the inclination
+    - e: eccentricity
+    - omega: perihelion argument parameter from Winn
+    - time: BJD of observation (d)
+    - time0: time of "zeroth" pericenter (d)
+
+    # outputs:
+    - Z: line-of-sight position (AU)
+
+    # bugs / issues:
+    - could be made more efficient (there are lots of re-dos of trig calls)
+    - definitely something is wrong -- plots look wrong...!
+    """
+    dMdt = 2. * np.pi / P
+    M = (time - time0) * dMdt
+    E = eccentric_anomaly_from_mean_anomaly(M, e)
+    f = true_anomaly_from_eccentric_anomaly(E, e)
+    r = a * (1. - e * np.cos(E))
+    return r * np.sin(omega + f) * sini
 
 def rv_from_elements(P, a, sini, e, omega, time, time0):
     """
@@ -122,9 +148,8 @@ def rv_from_elements(P, a, sini, e, omega, time, time0):
     f = true_anomaly_from_eccentric_anomaly(E, e)
     dEdt = d_eccentric_anomaly_d_mean_anomaly(E, e) * dMdt
     dfdt = d_true_anomaly_d_eccentric_anomaly(E, f, e) * dEdt
-    cf = np.cos(f)
-    r = a * (1. - e * e) / (1 + e * cf)
-    drdt = (a * (1. - e * e) * e * np.sin(f) / (1 + e * cf) ** 2) * dfdt
+    r = a * (1. - e * np.cos(E))
+    drdt = a * e * np.sin(E) * dEdt
     rv = r * np.cos(omega + f) * sini * dfdt + np.sin(omega + f) * sini * drdt
     return rv
 
@@ -139,7 +164,7 @@ if __name__ == "__main__":
         suffix = "{:03d}".format(i)
         P = np.exp(np.log(10.) + np.log(400./10.) * np.random.uniform()) # d
         a = (P / 300.) ** (2. / 3.) # made up shit AU
-        e = 0.99 # testing
+        e = 0.5 # testing
         omega = 2. * np.pi * np.random.uniform() # rad
         time0 = t0 + (t1 - t0) * np.random.uniform()
         rvs = np.array([rv_from_elements(P, a, 1.0, e, omega, t, time0) for t in times])

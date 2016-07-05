@@ -37,8 +37,8 @@ def eccentric_anomaly_from_mean_anomaly(M, e, tol=1e-14, maxiter=100):
     - eccentric anomaly (rad)
 
     # bugs / issues:
-    - MAGIC numbers 1e-8, 100
-    - totally untested
+    - MAGIC numbers 1e-14, 100
+    - somewhat tested
     """
     iter = 0
     deltaM = np.Inf
@@ -59,7 +59,7 @@ def true_anomaly_from_eccentric_anomaly(E, e):
     - f: true anomaly (rad)
 
     # bugs / issues:
-    - totally untested
+    - somewhat tested
     """
     cE, sE = np.cos(E), np.sin(E)
     f = np.arccos((cE - e) / (1.0 - e * cE))

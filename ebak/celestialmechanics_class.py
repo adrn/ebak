@@ -9,6 +9,7 @@ import os
 import sys
 
 # Third-party
+from astropy.constants import G
 import astropy.time as at
 import astropy.units as u
 import matplotlib.pyplot as plt
@@ -22,6 +23,8 @@ __all__ = ['RVOrbit', 'RVData', 'SimulatedRVOrbit', 'OrbitModel']
 
 usys = UnitSystem(u.au, u.day, u.radian, u.Msun)
 _ivar_disk = (1 / (30.*u.km/u.s)**2).decompose(usys).value # used in ln_prior below
+_G = G.decompose(usys).value
+lnG_4pi2 = np.log(_G/(4*np.pi**2))
 
 class RVOrbit(object):
     """
@@ -45,7 +48,7 @@ class RVOrbit(object):
     def __init__(self, P, a_sin_i, ecc, omega, t0, v0=0*u.km/u.s):
         # store unitful things without units for speed
         self._P = P.decompose(usys).value
-        self._a_sin_i = a.decompose(usys).value
+        self._a_sin_i = a_sin_i.decompose(usys).value
         self._omega = omega.decompose(usys).value
         if isinstance(t0, at.Time):
             self._t0 = t0.tcb.mjd
@@ -53,7 +56,7 @@ class RVOrbit(object):
             self._t0 = t0
         self._v0 = v0.decompose(usys).value
 
-        self.ecc = float(ecc)
+        self.ecc = ecc
 
     @property
     def P(self):
@@ -81,23 +84,24 @@ class RVOrbit(object):
 
     @classmethod
     def from_vec(cls, p):
-        (_P, _a_sin_i, sqrte_cos_pomega,
+        (ln_P, ln_a_sin_i, sqrte_cos_pomega,
          sqrte_sin_pomega, _t0, _v0) = p
         ecc = sqrte_cos_pomega**2 + sqrte_sin_pomega**2
         _omega = np.arctan2(sqrte_sin_pomega, sqrte_cos_pomega)
-        return cls(P=_P*usys['time'], a_sin_i=_a_sin_i*usys['length'],
+        return cls(P=np.exp(ln_P)*usys['time'], a_sin_i=np.exp(ln_a_sin_i)*usys['length'],
                    ecc=ecc, omega=_omega*usys['angle'], t0=_t0,
                    v0=_v0*usys['length']/usys['time'])
 
     def set_par_from_vec(self, p):
-        (ln_P, self._a_sin_i, sqrte_cos_pomega,
+        (ln_P, ln_a_sin_i, sqrte_cos_pomega,
          sqrte_sin_pomega, self._t0, self._v0) = p
         self.ecc = sqrte_cos_pomega**2 + sqrte_sin_pomega**2
         self._omega = np.arctan2(sqrte_sin_pomega, sqrte_cos_pomega)
         self._P = np.exp(ln_P)
+        self._a_sin_i = np.exp(ln_a_sin_i)
 
     def get_par_vec(self):
-        return np.array([np.log(self._P), self._a_sin_i,
+        return np.array([np.log(self._P), np.log(self._a_sin_i),
                          np.sqrt(self.ecc)*np.cos(self._omega),
                          np.sqrt(self.ecc)*np.sin(self._omega),
                          self._t0, self._v0])
@@ -138,7 +142,7 @@ class SimulatedRVOrbit(RVOrbit):
         rv : astropy.units.Quantity [km/s]
         """
         rv = self._generate_rv_curve(t)
-        return (rv*self.units['speed']).to(u.km/u.s)
+        return (rv*self.units['length']/self.units['time']).to(u.km/u.s)
 
     def plot(self, t=None, ax=None, **kwargs):
         """
@@ -160,8 +164,8 @@ class SimulatedRVOrbit(RVOrbit):
         style.setdefault('marker', None)
         style.setdefault('color', 'r')
 
-        rv = self.generate_rv_curve(t)
-        ax.plot(t, rv.value, **style)
+        rv = self.generate_rv_curve(t).to(u.km/u.s).value
+        ax.plot(t, rv, **style)
 
         return ax
 
@@ -207,7 +211,6 @@ class RVData(object):
 
     def plot(self, ax=None, **kwargs):
         """
-        TODO: add kwargs support
         """
         if ax is None:
             fig,ax = plt.subplots(1,1)
@@ -244,6 +247,13 @@ class OrbitModel(object):
     def ln_prior(self):
         lnp = 0.
 
+        # prior on mass function
+        K = 2*np.pi / (self.orbit.P * np.sqrt(1-self.orbit.ecc**2)) * self.orbit.a_sin_i
+        m_f = self.orbit.P * K**3 / (2*np.pi*G) * (1-self.orbit.ecc**2)**(3/2.)
+        lnp += -0.5 * (np.log(m_f) - np.log(3.))**2 / (2.)**2
+        if m_f < 0:
+            return -np.inf
+
         # assumes sampler is stepping in log(P)
         if self.orbit._P < 1. or self.orbit._P > 8192*365.: # days
             return -np.inf
@@ -259,7 +269,7 @@ class OrbitModel(object):
         # HACK: we could remove the cyclic variable t0
         _t0_epoch = 55000.
         if (self.orbit._t0 < (_t0_epoch-1.5*self.orbit._P) or
-            self.orbit._t0 < (_t0_epoch-1.5*self.orbit._P)):
+            self.orbit._t0 > (_t0_epoch+1.5*self.orbit._P)):
             return -np.inf
 
         # Gaussian with velocity dispersion of the disk
@@ -276,3 +286,22 @@ class OrbitModel(object):
     def __call__(self, p):
         self.orbit.set_par_from_vec(p)
         return self.ln_posterior()
+
+    def vec_to_plot_pars(self, p):
+        """
+        Convert an MCMC parameter vector to the parameters we will plot.
+        """
+
+        p = np.atleast_1d(p)
+        if p.ndim > 2:
+            raise ValueError("Shape of input p must be <= 2 (e.g., pass flatchain")
+
+        orbit = SimulatedRVOrbit.from_vec(p)
+
+        # TODO: is K correct here?
+        K = 2*np.pi / (orbit.P * np.sqrt(1-orbit.ecc**2)) * orbit.a_sin_i
+        m_f = orbit.P * K**3 / (2*np.pi*G) * (1-orbit.ecc**2)**(3/2.)
+
+        return np.vstack((np.log(orbit.P.to(u.day).value), m_f.to(u.Msun).value,
+                          orbit.ecc, orbit.omega.to(u.degree).value,
+                          orbit.t0.mjd, orbit.v0.to(u.km/u.s).value))

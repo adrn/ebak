@@ -93,13 +93,14 @@ class RVOrbit(object):
                    v0=_v0*usys['length']/usys['time'])
 
     def set_par_from_vec(self, p):
-        (self._P, self._a, self.sin_i, sqrte_cos_pomega,
+        (ln_P, self._a, self.sin_i, sqrte_cos_pomega,
          sqrte_sin_pomega, self._t0, self._v0) = p
         self.ecc = sqrte_cos_pomega**2 + sqrte_sin_pomega**2
         self._omega = np.arctan2(sqrte_sin_pomega, sqrte_cos_pomega)
+        self._P = np.exp(ln_P)
 
     def get_par_vec(self):
-        return np.array([self._P, self._a, self.sin_i,
+        return np.array([np.log(self._P), self._a, self.sin_i,
                          np.sqrt(self.ecc)*np.cos(self._omega),
                          np.sqrt(self.ecc)*np.sin(self._omega),
                          self._t0, self._v0])
@@ -246,9 +247,8 @@ class OrbitModel(object):
     def ln_prior(self):
         lnp = 0.
 
-        if 1. < self.orbit._P < 8192*365.: # days
-            lnp += -np.log(self.orbit._P)
-        else:
+        # assumes sampler is stepping in log(P)
+        if self.orbit._P < 1. or self.orbit._P > 8192*365.: # days
             return -np.inf
 
         if 0.01 < self.orbit._a < 16384.: # au

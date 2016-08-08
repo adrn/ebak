@@ -262,5 +262,5 @@ class OrbitModel(object):
         return lnp + self.ln_likelihood().sum()
 
     def __call__(self, p):
-        self.model.set_par_from_vec(p)
+        self.orbit.set_par_from_vec(p)
         return self.ln_posterior()

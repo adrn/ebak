@@ -126,7 +126,7 @@ def Z_from_elements(times, P, a, sini, e, omega, time0):
     rs = a * (1. - e * np.cos(Es))
     return rs * np.sin(omega + fs) * sini
 
-def rv_from_elements(times, P, a, sini, e, omega, time0):
+def rv_from_elements(times, P, a, sini, e, omega, time0, rv0):
     """
     # inputs:
     - times: BJD of observations (d)
@@ -136,12 +136,12 @@ def rv_from_elements(times, P, a, sini, e, omega, time0):
     - e: eccentricity
     - omega: perihelion argument parameter from Winn
     - time0: time of "zeroth" pericenter (d)
+    - rv0: systemic velocity (au/d)
 
     # outputs:
     - rv: radial velocity (AU/d ?)
 
     # bugs / issues:
-    - doesn't include velocity zeropoint
     - could be made more efficient (there are lots of re-dos of trig calls)
     - definitely something is wrong -- plots look wrong...!
     """
@@ -154,7 +154,7 @@ def rv_from_elements(times, P, a, sini, e, omega, time0):
     rs = a * (1. - e * np.cos(Es))
     drdts = a * e * np.sin(Es) * dEdts
     rvs = rs * np.cos(omega + fs) * sini * dfdts + np.sin(omega + fs) * sini * drdts
-    return rvs
+    return rvs + rv0
 
 def test_everything():
     np.random.seed(42)

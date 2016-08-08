@@ -105,7 +105,8 @@ class SimulatedRVOrbit(RVOrbit):
             _t = t
 
         rv = rv_from_elements(_t, self._P, self._a, self.sin_i,
-                              self.ecc, self._omega, self._t0)
+                              self.ecc, self._omega, self._t0,
+                              self._v0)
         return (rv*self.units['speed']).to(u.km/u.s)
 
 
@@ -119,7 +120,7 @@ class RVData(object):
         Radial velocity measurements.
     ivar : `~astropy.units.Quantity` [1/speed^2]
     """
-    @u.quantity_input(rv=u.km/u.s, ivar=u.s/u.km)
+    @u.quantity_input(rv=u.km/u.s, ivar=(u.s/u.km)**2)
     def __init__(self, t, rv, ivar):
         if isinstance(t, at.Time):
             _t = t.tcb.mjd

@@ -96,12 +96,16 @@ class RVOrbit(object):
 
 class SimulatedRVOrbit(RVOrbit):
 
-    def generate_rv_curve(self, t):
+    def _generate_rv_curve(self, t):
         """
         Parameters
         ----------
         t : array_like, `~astropy.time.Time`
             Array of times. Either in BJD or as an Astropy time.
+
+        Returns
+        -------
+        rv : numpy.ndarray
         """
 
         if isinstance(t, at.Time):
@@ -112,6 +116,20 @@ class SimulatedRVOrbit(RVOrbit):
         rv = rv_from_elements(_t, self._P, self._a, self.sin_i,
                               self.ecc, self._omega, self._t0,
                               self._v0)
+        return rv
+
+    def generate_rv_curve(self, t):
+        """
+        Parameters
+        ----------
+        t : array_like, `~astropy.time.Time`
+            Array of times. Either in BJD or as an Astropy time.
+
+        Returns
+        -------
+        rv : astropy.units.Quantity [km/s]
+        """
+        rv = self._generate_rv_curve(t)
         return (rv*self.units['speed']).to(u.km/u.s)
 
     def plot(self, t=None, ax=None):
@@ -204,7 +222,7 @@ class OrbitModel(object):
         self.data = data
 
     def ln_likelihood(self):
-        rvs = self.orbit.generate_rv_curve(self.data._t)
+        rvs = self.orbit._generate_rv_curve(self.data._t)
         return -0.5 * self.data._ivar * (self.data._rv - rvs)**2
 
     def ln_prior(self):
@@ -228,12 +246,12 @@ class OrbitModel(object):
 
         # HACK: we could remove the cyclic variable t0
         _t0_epoch = 55000.
-        if (self._t0 < (_t0_epoch-1.5*self.orbit._P) or
-            self._t0 < (_t0_epoch-1.5*self.orbit._P)):
+        if (self.orbit._t0 < (_t0_epoch-1.5*self.orbit._P) or
+            self.orbit._t0 < (_t0_epoch-1.5*self.orbit._P)):
             return -np.inf
 
         # Gaussian with velocity dispersion of the disk
-        lnp += -0.5 * _ivar_disk * self._v0**2
+        lnp += -0.5 * _ivar_disk * self.orbit._v0**2
 
         return lnp
 
@@ -241,7 +259,7 @@ class OrbitModel(object):
         lnp = self.ln_prior()
         if not np.isfinite(lnp):
             return -np.inf
-        return lnp + self.ln_likelihood()
+        return lnp + self.ln_likelihood().sum()
 
     def __call__(self, p):
         self.model.set_par_from_vec(p)

@@ -47,7 +47,10 @@ class RVOrbit(object):
         self._P = P.decompose(usys).value
         self._a = a.decompose(usys).value
         self._omega = omega.decompose(usys).value
-        self._t0 = t0.tcb.mjd
+        if isinstance(t0, at.Time):
+            self._t0 = t0.tcb.mjd
+        else:
+            self._t0 = t0
         self._v0 = v0.decompose(usys).value
 
         self.sin_i = float(sin_i)

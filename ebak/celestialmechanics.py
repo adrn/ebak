@@ -100,12 +100,12 @@ def d_true_anomaly_d_eccentric_anomaly(Es, fs, e):
     assert np.allclose(cEs, (e + cfs) / (1. + e * cfs))
     return (sEs / sfs) * (1. + e * cfs) / (1. - e * cEs)
 
-def Z_from_elements(times, P, a, sini, e, omega, time0):
+def Z_from_elements(times, P, asini, e, omega, time0):
     """
     # inputs:
     - P: period (d)
-    - a: semi-major axis for star from system barycenter (will be negative for one of the stars?) (AU ?)
-    - sini: sine of the inclination
+    - asini: semi-major axis times sine of inclination for star from system
+             barycenter (will be negative for one of the stars?) (AU ?)
     - e: eccentricity
     - omega: perihelion argument parameter from Winn
     - time: BJD of observation (d)
@@ -123,16 +123,16 @@ def Z_from_elements(times, P, a, sini, e, omega, time0):
     Ms = (times - time0) * dMdt
     Es = eccentric_anomaly_from_mean_anomaly(Ms, e)
     fs = true_anomaly_from_eccentric_anomaly(Es, e)
-    rs = a * (1. - e * np.cos(Es))
-    return rs * np.sin(omega + fs) * sini
+    rs = asini * (1. - e * np.cos(Es))
+    return rs * np.sin(omega + fs)
 
-def rv_from_elements(times, P, a, sini, e, omega, time0, rv0):
+def rv_from_elements(times, P, asini, e, omega, time0, rv0):
     """
     # inputs:
     - times: BJD of observations (d)
     - P: period (d)
-    - a: semi-major axis for star from system barycenter (will be negative for one of the stars?) (AU ?)
-    - sini: sine of the inclination
+    - a: semi-major axis times sine of inclination for star from system
+         barycenter (will be negative for one of the stars?) (AU ?)
     - e: eccentricity
     - omega: perihelion argument parameter from Winn
     - time0: time of "zeroth" pericenter (d)
@@ -151,9 +151,9 @@ def rv_from_elements(times, P, a, sini, e, omega, time0, rv0):
     fs = true_anomaly_from_eccentric_anomaly(Es, e)
     dEdts = d_eccentric_anomaly_d_mean_anomaly(Es, e) * dMdt
     dfdts = d_true_anomaly_d_eccentric_anomaly(Es, fs, e) * dEdts
-    rs = a * (1. - e * np.cos(Es))
-    drdts = a * e * np.sin(Es) * dEdts
-    rvs = rs * np.cos(omega + fs) * sini * dfdts + np.sin(omega + fs) * sini * drdts
+    rs = asini * (1. - e * np.cos(Es))
+    drdts = asini * e * np.sin(Es) * dEdts
+    rvs = rs * np.cos(omega + fs) * dfdts + np.sin(omega + fs) * drdts
     return rvs + rv0
 
 def test_everything():
@@ -167,7 +167,7 @@ def test_everything():
         omega = 2. * np.pi * np.random.uniform() # rad
         time0, time = tt0 + (tt1 - tt0) * np.random.uniform(size=2) # d
         sini = 1.0
-        print("testing", P, a, sini, e, omega, time, time0)
+        print("testing", P, a*sini, e, omega, time, time0)
         big = 65536.0 # MAGIC
         dt = P / big # d ; MAGIC
         dMdt = 2. * np.pi / P # rad / d
@@ -185,8 +185,8 @@ def test_everything():
         if np.abs(dfdE - dfdE2) > (1. / big):
             print("dfdE", dfdE, dfdE2, dfdE - dfdE2)
             assert False
-        Z, Z1, Z2 = Z_from_elements(threetimes, P, a, sini, e, omega, time0)
-        rv = rv_from_elements(time, P, a, sini, e, omega, time0)
+        Z, Z1, Z2 = Z_from_elements(threetimes, P, a*sini, e, omega, time0)
+        rv = rv_from_elements(time, P, a*sini, e, omega, time0, 0.)
         rv2 = (Z2 - Z1) / dt
         if np.abs(rv - rv2) > (a / P) * (1. / big):
             print("RV", rv, rv2, rv - rv2)

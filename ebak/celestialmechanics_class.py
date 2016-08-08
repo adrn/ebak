@@ -30,10 +30,8 @@ class RVOrbit(object):
     ----------
     P : `~astropy.units.Quantity` [time]
         Orbital period.
-    a : `~astropy.units.Quantity` [length]
-        Semi-major axis.
-    sin_i : numeric
-        Sin of the inclination angle.
+    a_sin_i : `~astropy.units.Quantity` [length]
+        Semi-major axis times sine of inclination angle.
     ecc : numeric
         Eccentricity.
     omega : `~astropy.units.Quantity` [angle]
@@ -43,11 +41,11 @@ class RVOrbit(object):
     v0 : `~astropy.units.Quantity` [speed]
         Systemic velocity
     """
-    @u.quantity_input(P=u.yr, a=u.au, omega=u.radian, v0=u.km/u.s)
-    def __init__(self, P, a, sin_i, ecc, omega, t0, v0=0*u.km/u.s):
+    @u.quantity_input(P=u.yr, a_sin_i=u.au, omega=u.radian, v0=u.km/u.s)
+    def __init__(self, P, a_sin_i, ecc, omega, t0, v0=0*u.km/u.s):
         # store unitful things without units for speed
         self._P = P.decompose(usys).value
-        self._a = a.decompose(usys).value
+        self._a_sin_i = a.decompose(usys).value
         self._omega = omega.decompose(usys).value
         if isinstance(t0, at.Time):
             self._t0 = t0.tcb.mjd
@@ -55,7 +53,6 @@ class RVOrbit(object):
             self._t0 = t0
         self._v0 = v0.decompose(usys).value
 
-        self.sin_i = float(sin_i)
         self.ecc = float(ecc)
 
     @property
@@ -63,8 +60,8 @@ class RVOrbit(object):
         return self._P * usys['time']
 
     @property
-    def a(self):
-        return self._a * usys['length']
+    def a_sin_i(self):
+        return self._a_sin_i * usys['length']
 
     @property
     def omega(self):
@@ -84,23 +81,23 @@ class RVOrbit(object):
 
     @classmethod
     def from_vec(cls, p):
-        (_P, _a, sin_i, sqrte_cos_pomega,
+        (_P, _a_sin_i, sqrte_cos_pomega,
          sqrte_sin_pomega, _t0, _v0) = p
         ecc = sqrte_cos_pomega**2 + sqrte_sin_pomega**2
         _omega = np.arctan2(sqrte_sin_pomega, sqrte_cos_pomega)
-        return cls(P=_P*usys['time'], a=_a*usys['length'], sin_i=sin_i,
+        return cls(P=_P*usys['time'], a_sin_i=_a_sin_i*usys['length'],
                    ecc=ecc, omega=_omega*usys['angle'], t0=_t0,
                    v0=_v0*usys['length']/usys['time'])
 
     def set_par_from_vec(self, p):
-        (ln_P, self._a, self.sin_i, sqrte_cos_pomega,
+        (ln_P, self._a_sin_i, sqrte_cos_pomega,
          sqrte_sin_pomega, self._t0, self._v0) = p
         self.ecc = sqrte_cos_pomega**2 + sqrte_sin_pomega**2
         self._omega = np.arctan2(sqrte_sin_pomega, sqrte_cos_pomega)
         self._P = np.exp(ln_P)
 
     def get_par_vec(self):
-        return np.array([np.log(self._P), self._a, self.sin_i,
+        return np.array([np.log(self._P), self._a_sin_i,
                          np.sqrt(self.ecc)*np.cos(self._omega),
                          np.sqrt(self.ecc)*np.sin(self._omega),
                          self._t0, self._v0])
@@ -124,7 +121,7 @@ class SimulatedRVOrbit(RVOrbit):
         else:
             _t = t
 
-        rv = rv_from_elements(_t, self._P, self._a, self.sin_i,
+        rv = rv_from_elements(_t, self._P, self._a_sin_i,
                               self.ecc, self._omega, self._t0,
                               self._v0)
         return rv
@@ -251,12 +248,9 @@ class OrbitModel(object):
         if self.orbit._P < 1. or self.orbit._P > 8192*365.: # days
             return -np.inf
 
-        if 0.01 < self.orbit._a < 16384.: # au
-            lnp += -np.log(self.orbit._a)
+        if 1E-6 < self.orbit._a_sin_i < 16384.: # au
+            lnp += -np.log(self.orbit._a_sin_i)
         else:
-            return -np.inf
-
-        if self.orbit.sin_i < 0. or self.orbit.sin_i > 1.:
             return -np.inf
 
         if self.orbit.ecc < 0. or self.orbit.ecc > 1.:

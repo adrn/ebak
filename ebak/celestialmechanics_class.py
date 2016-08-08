@@ -207,7 +207,7 @@ class RVData(object):
 
     # ---
 
-    def plot(self, ax=None):
+    def plot(self, ax=None, **kwargs):
         """
         TODO: add kwargs support
         """

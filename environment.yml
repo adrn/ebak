@@ -1,0 +1,15 @@
+name: ebak
+
+channels:
+  - astropy
+
+dependencies:
+  - numpy
+  - cython
+  - matplotlib
+  - scipy
+  - pip
+  - pip:
+    - emcee
+    - astro-gala
+

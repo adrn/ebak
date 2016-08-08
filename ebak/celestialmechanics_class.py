@@ -82,11 +82,21 @@ class RVOrbit(object):
     def units(self):
         return usys
 
+    @classmethod
+    def from_vec(cls, p):
+        (_P, _a, sin_i, sqrte_cos_pomega,
+         sqrte_sin_pomega, _t0, _v0) = p
+        ecc = sqrte_cos_pomega**2 + sqrte_sin_pomega**2
+        _omega = np.arctan2(sqrte_sin_pomega, sqrte_cos_pomega)
+        return cls(P=_P*usys['time'], a=_a*usys['length'], sin_i=sin_i,
+                   ecc=ecc, omega=_omega*usys['angle'], t0=_t0,
+                   v0=_v0*usys['length']/usys['time'])
+
     def set_par_from_vec(self, p):
         (self._P, self._a, self.sin_i, sqrte_cos_pomega,
          sqrte_sin_pomega, self._t0, self._v0) = p
         self.ecc = sqrte_cos_pomega**2 + sqrte_sin_pomega**2
-        self._omega = np.atan2(sqrte_sin_pomega, sqrte_cos_pomega)
+        self._omega = np.arctan2(sqrte_sin_pomega, sqrte_cos_pomega)
 
     def get_par_vec(self):
         return np.array([self._P, self._a, self.sin_i,
@@ -132,11 +142,9 @@ class SimulatedRVOrbit(RVOrbit):
         rv = self._generate_rv_curve(t)
         return (rv*self.units['speed']).to(u.km/u.s)
 
-    def plot(self, t=None, ax=None):
+    def plot(self, t=None, ax=None, **kwargs):
         """
         needs t or ax
-
-        TODO: add kwargs support
         """
         if t is None and ax is None:
             raise ValueError("You must pass a time array (t) or axes "
@@ -148,9 +156,14 @@ class SimulatedRVOrbit(RVOrbit):
         if t is None:
             t = np.linspace(*ax.get_xlim(), 1024)
 
+        style = kwargs.copy()
+        style.setdefault('linestyle', '-')
+        style.setdefault('alpha', 0.5)
+        style.setdefault('marker', None)
+        style.setdefault('color', 'r')
+
         rv = self.generate_rv_curve(t)
-        ax.plot(t, rv.value,
-                linestyle='-', alpha=0.5, marker=None, color='r')
+        ax.plot(t, rv.value, **style)
 
         return ax
 
@@ -201,10 +214,15 @@ class RVData(object):
         if ax is None:
             fig,ax = plt.subplots(1,1)
 
+        style = kwargs.copy()
+        style.setdefault('linestyle', 'none')
+        style.setdefault('alpha', 1.)
+        style.setdefault('marker', 'o')
+        style.setdefault('color', 'k')
+        style.setdefault('ecolor', '#666666')
+
         ax.errorbar(self.t.value, self.rv.to(u.km/u.s).value,
-                    self.stddev.to(u.km/u.s).value,
-                    linestyle='none', alpha=1., marker='o', color='k',
-                    ecolor='#666666')
+                    self.stddev.to(u.km/u.s).value, **style)
 
         return ax
 

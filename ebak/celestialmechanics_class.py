@@ -202,6 +202,32 @@ class OrbitModel(object):
         rvs = self.orbit.generate_rv_curve(self.data._t)
         return -0.5 * self.data._ivar * (self.data._rv - rvs)**2
 
+    def ln_prior(self):
+        lnp = 0.
+
+        if 1. < self.orbit._P < 8192*365.: # days
+            lnp += -np.log(self.orbit._P)
+        else:
+            return -np.inf
+
+        if 0.01 < self.orbit._a < 16384.: # au
+            lnp += -np.log(self.orbit._a)
+        else:
+            return -np.inf
+
+        if self.orbit.sin_i < 0. or self.orbit.sin_i > 1.:
+            return -np.inf
+
+        # PAUSE
+
+        return lnp
+
+    def ln_posterior(self):
+        lnp = self.ln_prior()
+        if not np.isfinite(lnp):
+            return -np.inf
+        return lnp + self.ln_likelihood()
+
     def __call__(self, p):
         self.model.set_par_from_vec(p)
-        return self.ln_likelihood()
+        return self.ln_posterior()

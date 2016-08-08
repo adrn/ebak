@@ -30,3 +30,5 @@ distribute-*.tar.gz
 *.log
 *.pdf
 *~
+
+notebooks/*

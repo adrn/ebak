@@ -1,4 +1,4 @@
-Eclipsing Binaries in APOGEE and Kepler
-=======================================
+Binaries in APOGEE and Kepler
+=============================
 
 Stuff.

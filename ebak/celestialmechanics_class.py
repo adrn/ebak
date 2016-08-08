@@ -21,6 +21,7 @@ from .celestialmechanics import rv_from_elements
 __all__ = ['RVOrbit', 'RVData', 'SimulatedRVOrbit', 'OrbitModel']
 
 usys = UnitSystem(u.au, u.day, u.radian, u.Msun)
+_ivar_disk = (1 / (30.*u.km/u.s)**2).decompose(usys).value # used in ln_prior below
 
 class RVOrbit(object):
     """
@@ -82,12 +83,16 @@ class RVOrbit(object):
         return usys
 
     def set_par_from_vec(self, p):
-        (self._P, self._a, self.sin_i, self.ecc,
-         self._omega, self._t0, self._v0) = p
+        (self._P, self._a, self.sin_i, sqrte_cos_pomega,
+         sqrte_sin_pomega, self._t0, self._v0) = p
+        self.ecc = sqrte_cos_pomega**2 + sqrte_sin_pomega**2
+        self._omega = np.atan2(sqrte_sin_pomega, sqrte_cos_pomega)
 
     def get_par_vec(self):
-        return np.array([self._P, self._a, self.sin_i, self.ecc,
-                         self._omega, self._t0, self._v0])
+        return np.array([self._P, self._a, self.sin_i,
+                         np.sqrt(self.ecc)*np.cos(self._omega),
+                         np.sqrt(self.ecc)*np.sin(self._omega),
+                         self._t0, self._v0])
 
 class SimulatedRVOrbit(RVOrbit):
 
@@ -218,7 +223,17 @@ class OrbitModel(object):
         if self.orbit.sin_i < 0. or self.orbit.sin_i > 1.:
             return -np.inf
 
-        # PAUSE
+        if self.orbit.ecc < 0. or self.orbit.ecc > 1.:
+            return -np.inf
+
+        # HACK: we could remove the cyclic variable t0
+        _t0_epoch = 55000.
+        if (self._t0 < (_t0_epoch-1.5*self.orbit._P) or
+            self._t0 < (_t0_epoch-1.5*self.orbit._P)):
+            return -np.inf
+
+        # Gaussian with velocity dispersion of the disk
+        lnp += -0.5 * _ivar_disk * self._v0**2
 
         return lnp
 

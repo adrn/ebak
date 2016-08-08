@@ -11,6 +11,7 @@ import sys
 # Third-party
 import astropy.time as at
 import astropy.units as u
+import matplotlib.pyplot as plt
 import numpy as np
 from gala.units import UnitSystem
 
@@ -88,7 +89,6 @@ class RVOrbit(object):
         return np.array([self._P, self._a, self.sin_i, self.ecc,
                          self._omega, self._t0, self._v0])
 
-
 class SimulatedRVOrbit(RVOrbit):
 
     def generate_rv_curve(self, t):
@@ -108,6 +108,28 @@ class SimulatedRVOrbit(RVOrbit):
                               self.ecc, self._omega, self._t0,
                               self._v0)
         return (rv*self.units['speed']).to(u.km/u.s)
+
+    def plot(self, t=None, ax=None):
+        """
+        needs t or ax
+
+        TODO: add kwargs support
+        """
+        if t is None and ax is None:
+            raise ValueError("You must pass a time array (t) or axes "
+                             "instance (ax)")
+
+        if ax is None:
+            fig,ax = plt.subplots(1,1)
+
+        if t is None:
+            t = np.linspace(*ax.get_xlim(), 1024)
+
+        rv = self.generate_rv_curve(t)
+        ax.plot(t, rv.value,
+                linestyle='-', alpha=0.5, marker=None, color='r')
+
+        return ax
 
 
 class RVData(object):
@@ -142,6 +164,27 @@ class RVData(object):
     @property
     def ivar(self):
         return self._ivar * (usys['time'] / usys['length'])**2
+
+    @property
+    def stddev(self):
+        return 1 / np.sqrt(self.ivar)
+
+    # ---
+
+    def plot(self, ax=None):
+        """
+        TODO: add kwargs support
+        """
+        if ax is None:
+            fig,ax = plt.subplots(1,1)
+
+        ax.errorbar(self.t.value, self.rv.to(u.km/u.s).value,
+                    self.stddev.to(u.km/u.s).value,
+                    linestyle='none', alpha=1., marker='o', color='k',
+                    ecolor='#666666')
+
+        return ax
+
 
 class OrbitModel(object):
     """

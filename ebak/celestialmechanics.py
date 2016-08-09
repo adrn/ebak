@@ -45,18 +45,19 @@ def mean_anomaly_from_eccentric_anomaly(Es, e):
     """
     return Es - e * np.sin(Es)
 
-def eccentric_anomaly_from_mean_anomaly(Ms, e, tol=1.e-14, maxiter=100):
+def eccentric_anomaly_from_mean_anomaly(Ms, e, tol=1E-14, maxiter=1024):
     """
     Parameters
     ----------
-    Ms : numeric [radian]
+    Ms : numeric, array_like [radian]
         Mean anomaly.
     e : numeric
         Eccentricity.
     tol : numeric (optional)
         Numerical tolerance used in iteratively solving for eccentric anomaly.
     maxiter : int (optional)
-        Maximum number of iterations when iteratively solving for eccentric anomaly.
+        Maximum number of iterations when iteratively solving for
+        eccentric anomaly.
 
     Returns
     -------
@@ -67,20 +68,23 @@ def eccentric_anomaly_from_mean_anomaly(Ms, e, tol=1.e-14, maxiter=100):
     ------
     - Magic numbers ``tol`` and ``maxiter``
     """
+    Ms = np.atleast_1d(Ms)
 
-    deltaMs = np.inf
+    if Ms.ndim > 1:
+        raise ValueError("Input must have <= 1 dim.")
+
     Es = Ms + e * np.sin(Ms)
+    for i in range(Ms.shape[0]):
+        for _ in range(maxiter):
+            deltaMs = Ms[i] - mean_anomaly_from_eccentric_anomaly(Es[i], e)
+            Es[i] = Es[i] + deltaMs / (1. - e * np.cos(Es[i]))
 
-    for i in range(maxiter):
-        deltaMs = (Ms - mean_anomaly_from_eccentric_anomaly(Es, e))
-        Es = Es + deltaMs / (1. - e * np.cos(Es))
+            if np.all(np.abs(deltaMs) < tol):
+                break
 
-        if np.all(np.abs(deltaMs) < tol):
-            break
-
-    else:
-        warnings.warn("eccentric_anomaly_from_mean_anomaly() reached maximum "
-                      "number of iterations", RuntimeWarning)
+        else:
+            warnings.warn("eccentric_anomaly_from_mean_anomaly() reached maximum "
+                          "number of iterations", RuntimeWarning)
 
     return Es
 
@@ -100,8 +104,7 @@ def true_anomaly_from_eccentric_anomaly(Es, e):
     """
     cEs, sEs = np.cos(Es), np.sin(Es)
     fs = np.arccos((cEs - e) / (1.0 - e * cEs))
-    fs *= (np.sign(np.sin(fs)) * np.sign(sEs))
-    return fs
+    return fs * np.sign(np.sin(fs)) * np.sign(sEs)
 
 def d_eccentric_anomaly_d_mean_anomaly(Es, e):
     """
@@ -146,8 +149,12 @@ def d_true_anomaly_d_eccentric_anomaly(Es, fs, e):
 
 def Z_from_elements(times, P, asini, e, omega, time0):
     """
+    Z points towards the observer.
+
     Parameters
     ----------
+    times : array_like [day]
+        BJD of observations.
     p : numeric [day]
         Period.
     asini : numeric [AU]
@@ -157,8 +164,6 @@ def Z_from_elements(times, P, asini, e, omega, time0):
         Eccentricity.
     omega : numeric [radian]
         Perihelion argument parameter from Winn.
-    time : numeric [day]
-        BJD of observation.
     time0 : numeric [day]
         Time of "zeroth" pericenter.
 
@@ -171,14 +176,20 @@ def Z_from_elements(times, P, asini, e, omega, time0):
     ------
     - doesn't include system Z value (Z offset or Z zeropoint)
     - could be made more efficient (there are lots of re-dos of trig calls)
-    - definitely something is wrong -- plots look wrong...!
 
     """
+    times = np.array(times)
+
     dMdt = 2. * np.pi / P
     Ms = (times - time0) * dMdt
+
     Es = eccentric_anomaly_from_mean_anomaly(Ms, e)
     fs = true_anomaly_from_eccentric_anomaly(Es, e)
+
     rs = asini * (1. - e * np.cos(Es))
+    # this is equivalent to:
+    # rs = asini * (1. - e**2) / (1 + e*np.cos(fs))
+
     return rs * np.sin(omega + fs)
 
 def rv_from_elements(times, P, asini, e, omega, time0, rv0):
@@ -209,15 +220,21 @@ def rv_from_elements(times, P, asini, e, omega, time0, rv0):
     Issues
     ------
     - could be made more efficient (there are lots of re-dos of trig calls)
-    - definitely something is wrong -- plots look wrong...!
     """
+    times = np.array(times)
+
     dMdt = 2. * np.pi / P
     Ms = (times - time0) * dMdt
+
     Es = eccentric_anomaly_from_mean_anomaly(Ms, e)
     fs = true_anomaly_from_eccentric_anomaly(Es, e)
+
     dEdts = d_eccentric_anomaly_d_mean_anomaly(Es, e) * dMdt
     dfdts = d_true_anomaly_d_eccentric_anomaly(Es, fs, e) * dEdts
+
     rs = asini * (1. - e * np.cos(Es))
     drdts = asini * e * np.sin(Es) * dEdts
+
     rvs = rs * np.cos(omega + fs) * dfdts + np.sin(omega + fs) * drdts
-    return rvs + rv0
+
+    return rvs - rv0

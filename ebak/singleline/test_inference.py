@@ -92,7 +92,7 @@ def test_sample_from_prior():
 
     # corner plot
     flatchain = np.vstack(sampler.chain[:,-256:])
-    plot_pars = model.vec_to_plot_pars(flatchain.T).T
+    plot_pars = model.vec_to_plot_pars(flatchain)
     fig = corner.corner(plot_pars, labels=model.plot_labels)
 
     plt.show()

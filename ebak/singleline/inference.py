@@ -149,9 +149,11 @@ class OrbitModel(object):
                              orbit.v0.to(u.km/u.s).value,
                              model.s.to(u.km/u.s).value])
         elif p.ndim == 2:
+            model = self.copy()
+
             all_pars = []
             for i in range(p.shape[0]):
-                model = self.from_vec(p[i])
+                model.set_par_from_vec(p[i])
                 orbit = model.orbit
                 all_pars.append([np.log(orbit.P.to(u.day).value),
                                  orbit.m_f.to(u.Msun).value,

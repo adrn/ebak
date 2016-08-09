@@ -17,9 +17,9 @@ import numpy as np
 from gala.units import UnitSystem
 
 # Project
-from . import usys
 from .celestialmechanics import rv_from_elements
 from .util import find_t0
+from .units import usys
 
 __all__ = ['RVOrbit', 'SimulatedRVOrbit']
 

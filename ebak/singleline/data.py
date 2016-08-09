@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 # Project
-from .. import usys
+from ..units import usys
 
 __all__ = ['RVData']
 

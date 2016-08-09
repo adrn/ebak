@@ -58,6 +58,16 @@ class RVOrbit(object):
 
         self.ecc = ecc
 
+    # Computed Quantities
+    @property
+    def _K(self):
+        return 2*np.pi / (self._P * np.sqrt(1-self.ecc**2)) * self._a_sin_i
+
+    @property
+    def _m_f(self):
+        return self._P * self._K**3 / (2*np.pi*_G) * (1 - self.ecc**2)**(3/2.)
+
+    # Unit-ful properties
     @property
     def P(self):
         return self._P * usys['time']
@@ -81,6 +91,15 @@ class RVOrbit(object):
     @property
     def units(self):
         return usys
+
+    @property
+    def K(self):
+        return self._K * usys['length'] / usys['time']
+
+    @property
+    def m_f(self):
+        return self._m_f * usys['mass']
+
 
 class SimulatedRVOrbit(RVOrbit):
 
@@ -236,9 +255,14 @@ class OrbitModel(object):
     def ln_prior(self):
         lnp = 0.
 
+        # Jitter: for velocity error model
+        if self._s < 0.:
+            return -np.inf
+        lnp += -self._s / jitter_scale
+
         # Mass function: log-normal centered on ln(3)
-        K = 2*np.pi / (self.orbit._P * np.sqrt(1-self.orbit.ecc**2)) * self.orbit._a_sin_i
-        m_f = self.orbit._P * K**3 / (2*np.pi*_G) * (1-self.orbit.ecc**2)**(3/2.)
+        K = self.orbit._K
+        m_f = self.orbit._m_f
         lnp += -0.5 * (np.log(m_f) - np.log(3.))**2 / (2.)**2
         if m_f < 0:
             return -np.inf
@@ -265,11 +289,6 @@ class OrbitModel(object):
 
         # Systemic velocity: Gaussian with velocity dispersion of the disk
         lnp += -0.5 * _ivar_disk * self.orbit._v0**2
-
-        # Jitter: for velocity error model
-        if self._s < 0.:
-            return -np.inf
-        lnp += -self._s / jitter_scale
 
         return lnp
 
@@ -333,11 +352,10 @@ class OrbitModel(object):
         model = self.from_vec(p)
         orbit = model.orbit
 
-        # TODO: is K correct here?
-        K = 2*np.pi / (orbit.P * np.sqrt(1-orbit.ecc**2)) * orbit.a_sin_i
-        m_f = orbit.P * K**3 / (2*np.pi*G) * (1-orbit.ecc**2)**(3/2.)
-
-        return np.vstack((np.log(orbit.P.to(u.day).value), m_f.to(u.Msun).value,
-                          orbit.ecc, orbit.omega.to(u.degree).value,
-                          orbit.t0.mjd, orbit.v0.to(u.km/u.s).value,
+        return np.vstack((np.log(orbit.P.to(u.day).value),
+                          orbit.m_f.to(u.Msun).value,
+                          orbit.ecc,
+                          orbit.omega.to(u.degree).value,
+                          orbit.t0.mjd,
+                          orbit.v0.to(u.km/u.s).value,
                           model.s.to(u.km/u.s).value))

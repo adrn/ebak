@@ -5,6 +5,7 @@ __author__ = "adrn <adrn@astro.columbia.edu>"
 # Third-party
 import astropy.time as atime
 import astropy.units as u
+import matplotlib.pyplot as plt
 import numpy as np
 import pytest
 
@@ -26,3 +27,20 @@ def test_rvdata():
 
     with pytest.raises(TypeError):
         RVData(t=t, rv=rv, ivar=ivar.value)
+
+    # check that copy works
+    t = atime.Time(t, format='mjd', scale='utc')
+    data1 = RVData(t=t, rv=rv, ivar=ivar)
+    data2 = data1.copy()
+
+    data1._t *= 1.5
+    data1._rv *= 1.5
+    data1._ivar *= 1.5
+    assert np.all(data2._t != data1._t)
+    assert np.all(data2._rv != data1._rv)
+    assert np.all(data2._ivar != data1._ivar)
+
+    # check that plotting at least succeeds (TODO: could be better)
+    data1.plot()
+    data1.plot(color='r')
+    data1.plot(ax=plt.gca())

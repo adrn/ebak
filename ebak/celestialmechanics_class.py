@@ -160,7 +160,7 @@ class SimulatedRVOrbit(RVOrbit):
         style.setdefault('linestyle', '-')
         style.setdefault('alpha', 0.5)
         style.setdefault('marker', None)
-        style.setdefault('color', 'r')
+        style.setdefault('color', '#de2d26')
 
         rv = self.generate_rv_curve(t).to(u.km/u.s).value
         ax.plot(t, rv, **style)

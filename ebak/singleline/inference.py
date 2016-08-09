@@ -75,7 +75,7 @@ class OrbitModel(object):
 
         # Semi-major axis and inclination
         if 1E-6 < self.orbit._a_sin_i < 16384.: # au
-            lnp += -np.log(self.orbit._a_sin_i)
+            lnp += -2*np.log(self.orbit._a_sin_i) # factor of 2 to include Jacobian
         else:
             return -np.inf
 
@@ -83,12 +83,7 @@ class OrbitModel(object):
         if self.orbit.ecc < 0. or self.orbit.ecc > 1.:
             return -np.inf
 
-        # Phase0: uniform in phase0
-        # HACK: closest t0 to 55555. at phase phi0
-        _t0_epoch = 55000.
-        if (self.orbit._t0 < (_t0_epoch-1.5*self.orbit._P) or
-            self.orbit._t0 > (_t0_epoch+1.5*self.orbit._P)):
-            return -np.inf
+        # Phase0: sampling uniform in phase0
 
         # Systemic velocity: Gaussian with velocity dispersion of the disk
         lnp += -0.5 * _ivar_disk * self.orbit._v0**2
@@ -115,7 +110,7 @@ class OrbitModel(object):
         self.orbit._a_sin_i = np.sqrt(asini_cos_phi0**2 + asini_sin_phi0**2)
         self.orbit.ecc = sqrte_cos_pomega**2 + sqrte_sin_pomega**2
         self.orbit._omega = np.arctan2(sqrte_sin_pomega, sqrte_cos_pomega)
-        self.orbit._phi0 = _np.arctan2(asini_sin_phi0, asini_cos_phi0)
+        self.orbit._phi0 = np.arctan2(asini_sin_phi0, asini_cos_phi0)
         self.orbit._v0 = _v0
 
         # nuisance parameters

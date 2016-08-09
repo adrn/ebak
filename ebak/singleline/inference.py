@@ -136,19 +136,34 @@ class OrbitModel(object):
         """
 
         p = np.atleast_1d(p)
-        if p.ndim > 2:
+
+        if p.ndim == 1:
+            model = self.from_vec(p)
+            orbit = model.orbit
+
+            return np.array([np.log(orbit.P.to(u.day).value),
+                             orbit.m_f.to(u.Msun).value,
+                             orbit.ecc,
+                             orbit.omega.to(u.degree).value,
+                             orbit.t0.mjd,
+                             orbit.v0.to(u.km/u.s).value,
+                             model.s.to(u.km/u.s).value])
+        elif p.ndim == 2:
+            all_pars = []
+            for i in range(p.shape[0]):
+                model = self.from_vec(p[i])
+                orbit = model.orbit
+                all_pars.append([np.log(orbit.P.to(u.day).value),
+                                 orbit.m_f.to(u.Msun).value,
+                                 orbit.ecc,
+                                 orbit.omega.to(u.degree).value,
+                                 orbit.t0.mjd,
+                                 orbit.v0.to(u.km/u.s).value,
+                                 model.s.to(u.km/u.s).value])
+            return np.array(all_pars)
+
+        else:
             raise ValueError("Shape of input p must be <= 2 (e.g., pass flatchain")
-
-        model = self.from_vec(p)
-        orbit = model.orbit
-
-        return np.vstack((np.log(orbit.P.to(u.day).value),
-                          orbit.m_f.to(u.Msun).value,
-                          orbit.ecc,
-                          orbit.omega.to(u.degree).value,
-                          orbit.t0.mjd,
-                          orbit.v0.to(u.km/u.s).value,
-                          model.s.to(u.km/u.s).value))
 
     # copy methods
     def __copy__(self):

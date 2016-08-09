@@ -35,6 +35,15 @@ class OrbitModel(object):
 
         self._s = s.decompose(usys).value
 
+        # see get_par_vec() and vec_to_plot_pars() below:
+        self.vec_labels = [r'$\ln (P/{\rm day})$',
+                           r'$a\sin i\cos\phi_0$', r'$a\sin i\sin\phi_0$',
+                           r'$\sqrt{e} \cos\omega$', r'$\sqrt{e} \sin\omega$',
+                           '$v_0$', '$s$']
+
+        self.plot_labels = [r'$\ln (P/{\rm day})$', r'$m_f$ [M$_{\odot}$]', r'$e$', r'$\omega$ [deg]',
+                            '$t_0$ [MJD]', '$v_0$ [km/s]', '$s$ [km/s]']
+
     @property
     def s(self):
         return self._s*usys['length']/usys['time']

@@ -261,7 +261,6 @@ class OrbitModel(object):
         lnp += -self._s / jitter_scale
 
         # Mass function: log-normal centered on ln(3)
-        K = self.orbit._K
         m_f = self.orbit._m_f
         lnp += -0.5 * (np.log(m_f) - np.log(3.))**2 / (2.)**2
         if m_f < 0:

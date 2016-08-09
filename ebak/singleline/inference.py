@@ -64,8 +64,9 @@ class OrbitModel(object):
         lnp += -self._s / jitter_scale
 
         # Mass function: log-normal centered on ln(3)
+        # - Numbers chosen from Troup et al. (2016)
         m_f = self.orbit._m_f
-        lnp += -0.5 * (np.log(m_f) - np.log(3.))**2 / (2.)**2
+        lnp += -0.5 * (np.log(m_f) - (-10.))**2 / (5.)**2
         if m_f < 0:
             return -np.inf
 
@@ -174,3 +175,6 @@ class OrbitModel(object):
                               s=self.s.copy())
     def copy(self):
         return self.__copy__()
+
+    # def plot_rv_samples(self, ):
+    #   pass

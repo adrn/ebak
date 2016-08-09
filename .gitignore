@@ -32,3 +32,4 @@ distribute-*.tar.gz
 *~
 
 notebooks/*
+data/*.fits

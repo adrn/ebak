@@ -1,66 +1,102 @@
 """
-This file is part of the EBAK project.
-Copyright 2016 David W. Hogg (NYU).
+Celestial mechanics for the Ebak project.
 
-# Celestial mechanics for the EBAK project
+General comments
+----------------
+- Parameterization comes from Winn http://arxiv.org/abs/1001.2010
+- Mean, eccentric, and true anomaly formulae from Wikipedia
+  https://en.wikipedia.org/wiki/Eccentric_anomaly
 
-## comments:
-- parameterization from Winn http://arxiv.org/abs/1001.2010
-- mean, eccentric, and true anomaly formulae from Wikipedia https://en.wikipedia.org/wiki/Eccentric_anomaly
+Issues
+------
+- Should I permit inputs of sin and cos instead of just angles?
 
-## bugs / issues:
-- should I permit inputs of sin and cos instead of just angles?
-- totally untested
 """
+from __future__ import division
+
+__author__ = "David W. Hogg <david.hogg@nyu.edu>"
+
+# Standard-library
+import warnings
+
+# Third-party
 import numpy as np
+
+__all__ = ['mean_anomaly_from_eccentric_anomaly',
+           'eccentric_anomaly_from_mean_anomaly',
+           'true_anomaly_from_eccentric_anomaly',
+           'd_eccentric_anomaly_d_mean_anomaly',
+           'd_true_anomaly_d_eccentric_anomaly',
+           'Z_from_elements', 'rv_from_elements']
 
 def mean_anomaly_from_eccentric_anomaly(Es, e):
     """
-    # inputs:
-    - Es: eccentric anomalies (rad)
-    - e: eccentricity
+    Parameters
+    ----------
+    Es : numeric, array_like [radian]
+        Eccentric anomaly.
+    e : numeric, array_like
+        Eccentricity.
 
-    # outputs:
-    - Ms: mean anomalies (rad)
+    Returns
+    -------
+    Ms : numeric, array_like [radian]
+        Mean anomaly.
     """
     return Es - e * np.sin(Es)
 
 def eccentric_anomaly_from_mean_anomaly(Ms, e, tol=1.e-14, maxiter=100):
     """
-    # inputs:
-    - Ms: mean anomaly (rad)
-    - e: eccentricity
-    - tol: [read the source]
-    - maxiter: [read the source]
+    Parameters
+    ----------
+    Ms : numeric [radian]
+        Mean anomaly.
+    e : numeric
+        Eccentricity.
+    tol : numeric (optional)
+        Numerical tolerance used in iteratively solving for eccentric anomaly.
+    maxiter : int (optional)
+        Maximum number of iterations when iteratively solving for eccentric anomaly.
 
-    # outputs:
-    - Es: eccentric anomaly (rad)
+    Returns
+    -------
+    Es : numeric [radian]
+        Eccentric anomaly.
 
-    # bugs / issues:
-    - MAGIC numbers 1e-14, 100
-    - somewhat tested
-    - could be parallelized
+    Issues
+    ------
+    - Magic numbers ``tol`` and ``maxiter``
     """
-    iter = 0
-    deltaMs = np.Inf
+
+    deltaMs = np.inf
     Es = Ms + e * np.sin(Ms)
-    while (iter < maxiter) and np.any(np.abs(deltaMs) > tol):
+
+    for i in range(maxiter):
         deltaMs = (Ms - mean_anomaly_from_eccentric_anomaly(Es, e))
         Es = Es + deltaMs / (1. - e * np.cos(Es))
-        iter += 1
+
+        if np.all(np.abs(deltaMs) < tol):
+            break
+
+    else:
+        warnings.warn("eccentric_anomaly_from_mean_anomaly() reached maximum "
+                      "number of iterations", RuntimeWarning)
+
     return Es
 
 def true_anomaly_from_eccentric_anomaly(Es, e):
     """
-    # inputs:
-    - Es: eccentric anomaly (rad)
-    - e: eccentricity
+    Parameters
+    ----------
+    Es : numeric, array_like [radian]
+        Eccentric anomaly.
+    e : numeric, array_like
+        Eccentricity.
 
-    # outputs:
-    - fs: true anomaly (rad)
-
-    # bugs / issues:
-    - somewhat tested
+    Returns
+    -------
+    fs : numeric [radian]
+        True anomaly.
     """
     cEs, sEs = np.cos(Es), np.sin(Es)
     fs = np.arccos((cEs - e) / (1.0 - e * cEs))
@@ -69,31 +105,39 @@ def true_anomaly_from_eccentric_anomaly(Es, e):
 
 def d_eccentric_anomaly_d_mean_anomaly(Es, e):
     """
-    # inputs:
-    - Es: eccentric anomaly (rad)
-    - e: eccentricity
+    Parameters
+    ----------
+    Es : numeric, array_like [radian]
+        Eccentric anomaly.
+    e : numeric, array_like
+        Eccentricity.
 
-    # outputs:
-    - dE / dM: derivatives of one anomaly wrt the other
-
-    # bugs / issues:
-    - somewhat tested
+    Returns
+    -------
+    dE_dM : numeric
+        Derivatives of one anomaly w.r.t. the other.
     """
     return 1. / (1. - e * np.cos(Es))
 
 def d_true_anomaly_d_eccentric_anomaly(Es, fs, e):
     """
-    # inputs:
-    - Es: eccentric anomaly (rad)
-    - fs: true anomaly (rad)
-    - e: eccentricity
+    Parameters
+    ----------
+    Es : numeric, array_like [radian]
+        Eccentric anomaly.
+    fs : numeric, array_like [radian]
+        True anomaly.
+    e : numeric, array_like
+        Eccentricity.
 
-    # outputs:
-    - df / dE: derivative of one anomaly wrt the other
+    Returns
+    -------
+    df_dE : numeric
+        Derivatives of one anomaly w.r.t. the other.
 
-    # bugs / issues:
-    - insane assert
-    - somewhat tested
+    Issues
+    ------
+    - Insane assert statement.
     """
     cfs, sfs = np.cos(fs), np.sin(fs)
     cEs, sEs = np.cos(Es), np.sin(Es)
@@ -102,22 +146,33 @@ def d_true_anomaly_d_eccentric_anomaly(Es, fs, e):
 
 def Z_from_elements(times, P, asini, e, omega, time0):
     """
-    # inputs:
-    - P: period (d)
-    - asini: semi-major axis times sine of inclination for star from system
-             barycenter (will be negative for one of the stars?) (AU ?)
-    - e: eccentricity
-    - omega: perihelion argument parameter from Winn
-    - time: BJD of observation (d)
-    - time0: time of "zeroth" pericenter (d)
+    Parameters
+    ----------
+    p : numeric [day]
+        Period.
+    asini : numeric [AU]
+        Semi-major axis times sine of inclination for star from system
+        barycenter (will be negative for one of the stars?)
+    e : numeric
+        Eccentricity.
+    omega : numeric [radian]
+        Perihelion argument parameter from Winn.
+    time : numeric [day]
+        BJD of observation.
+    time0 : numeric [day]
+        Time of "zeroth" pericenter.
 
-    # outputs:
-    - Z: line-of-sight position (AU)
+    Returns
+    -------
+    Z : numeric [AU]
+        Line-of-sight position.
 
-    # bugs / issues:
+    Issues
+    ------
     - doesn't include system Z value (Z offset or Z zeropoint)
     - could be made more efficient (there are lots of re-dos of trig calls)
     - definitely something is wrong -- plots look wrong...!
+
     """
     dMdt = 2. * np.pi / P
     Ms = (times - time0) * dMdt
@@ -128,20 +183,31 @@ def Z_from_elements(times, P, asini, e, omega, time0):
 
 def rv_from_elements(times, P, asini, e, omega, time0, rv0):
     """
-    # inputs:
-    - times: BJD of observations (d)
-    - P: period (d)
-    - a: semi-major axis times sine of inclination for star from system
-         barycenter (will be negative for one of the stars?) (AU ?)
-    - e: eccentricity
-    - omega: perihelion argument parameter from Winn
-    - time0: time of "zeroth" pericenter (d)
-    - rv0: systemic velocity (au/d)
+    Parameters
+    ----------
+    times : array_like [day]
+        BJD of observations.
+    p : numeric [day]
+        Period.
+    asini : numeric [AU]
+        Semi-major axis times sine of inclination for star from system
+        barycenter (will be negative for one of the stars?)
+    e : numeric
+        Eccentricity.
+    omega : numeric [radian]
+        Perihelion argument parameter from Winn.
+    time0 : numeric [day]
+        Time of "zeroth" pericenter.
+    rv0 : numeric [AU/day]
+        Systemic velocity.
 
-    # outputs:
-    - rv: radial velocity (AU/d ?)
+    Returns
+    -------
+    rv : numeric [AU/day]
+        Radial velocity.
 
-    # bugs / issues:
+    Issues
+    ------
     - could be made more efficient (there are lots of re-dos of trig calls)
     - definitely something is wrong -- plots look wrong...!
     """
@@ -155,43 +221,3 @@ def rv_from_elements(times, P, asini, e, omega, time0, rv0):
     drdts = asini * e * np.sin(Es) * dEdts
     rvs = rs * np.cos(omega + fs) * dfdts + np.sin(omega + fs) * drdts
     return rvs + rv0
-
-def test_everything():
-    np.random.seed(42)
-    tt0 = 0. # d
-    tt1 = 400. # d
-    for n in range(256):
-        P = np.exp(np.log(10.) + np.log(400./10.) * np.random.uniform()) # d
-        a = (P / 300.) ** (2. / 3.) # AU
-        e = np.random.uniform()
-        omega = 2. * np.pi * np.random.uniform() # rad
-        time0, time = tt0 + (tt1 - tt0) * np.random.uniform(size=2) # d
-        sini = 1.0
-        print("testing", P, a*sini, e, omega, time, time0)
-        big = 65536.0 # MAGIC
-        dt = P / big # d ; MAGIC
-        dMdt = 2. * np.pi / P # rad / d
-        threetimes = [time, time - 0.5 * dt, time + 0.5 * dt]
-        M, M1, M2 = ((t - time0) * dMdt for t in threetimes)
-        E, E1, E2 = (eccentric_anomaly_from_mean_anomaly(MM, e) for MM in [M, M1, M2])
-        dEdM = d_eccentric_anomaly_d_mean_anomaly(E, e)
-        dEdM2 = (E2 - E1) / (M2 - M1)
-        if np.abs(dEdM - dEdM2) > (1. / big):
-            print("dEdM", dEdM, dEdM2, dEdM - dEdM2)
-            assert False
-        f, f1, f2 = (true_anomaly_from_eccentric_anomaly(EE, e) for EE in [E, E1, E2])
-        dfdE = d_true_anomaly_d_eccentric_anomaly(E, f, e)
-        dfdE2 = (f2 - f1) / (E2 - E1)
-        if np.abs(dfdE - dfdE2) > (1. / big):
-            print("dfdE", dfdE, dfdE2, dfdE - dfdE2)
-            assert False
-        Z, Z1, Z2 = Z_from_elements(threetimes, P, a*sini, e, omega, time0)
-        rv = rv_from_elements(time, P, a*sini, e, omega, time0, 0.)
-        rv2 = (Z2 - Z1) / dt
-        if np.abs(rv - rv2) > (a / P) * (1. / big):
-            print("RV", rv, rv2, rv - rv2)
-            assert False
-    return True
-
-if __name__ == "__main__":
-    test_everything()

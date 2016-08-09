@@ -74,17 +74,31 @@ def eccentric_anomaly_from_mean_anomaly(Ms, e, tol=1E-14, maxiter=1024):
         raise ValueError("Input must have <= 1 dim.")
 
     Es = Ms + e * np.sin(Ms)
-    for i in range(Ms.shape[0]):
-        for _ in range(maxiter):
-            deltaMs = Ms[i] - mean_anomaly_from_eccentric_anomaly(Es[i], e)
-            Es[i] = Es[i] + deltaMs / (1. - e * np.cos(Es[i]))
 
-            if np.all(np.abs(deltaMs) < tol):
-                break
+    # how APW thinks this should be done:
+    # for i in range(Ms.shape[0]):
+    #     for _ in range(maxiter):
+    #         deltaMs = Ms[i] - mean_anomaly_from_eccentric_anomaly(Es[i], e)
+    #         Es[i] = Es[i] + deltaMs / (1. - e * np.cos(Es[i]))
 
-        else:
-            warnings.warn("eccentric_anomaly_from_mean_anomaly() reached maximum "
-                          "number of iterations ({})".format(maxiter), RuntimeWarning)
+    #         if np.all(np.abs(deltaMs) < tol):
+    #             break
+
+    #     else:
+    #         warnings.warn("eccentric_anomaly_from_mean_anomaly() reached maximum "
+    #                       "number of iterations ({})".format(maxiter), RuntimeWarning)
+
+    # how Hogg wrote this originally:
+    for _ in range(maxiter):
+        deltaMs = (Ms - mean_anomaly_from_eccentric_anomaly(Es, e))
+        Es = Es + deltaMs / (1. - e * np.cos(Es))
+
+        if np.all(np.abs(deltaMs) < tol):
+            break
+
+    else:
+        warnings.warn("eccentric_anomaly_from_mean_anomaly() reached maximum "
+                      "number of iterations ({})".format(maxiter), RuntimeWarning)
 
     return Es
 

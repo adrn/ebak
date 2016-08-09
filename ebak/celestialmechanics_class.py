@@ -5,8 +5,7 @@ from __future__ import division, print_function
 __author__ = "adrn <adrn@astro.columbia.edu>"
 
 # Standard library
-import os
-import sys
+import copy
 
 # Third-party
 from astropy.constants import G
@@ -24,6 +23,7 @@ from .units import usys
 __all__ = ['RVOrbit', 'SimulatedRVOrbit']
 
 _G = G.decompose(usys).value
+EPOCH = 55555. # Magic Number: used for un-modding phi0
 
 class RVOrbit(object):
     """
@@ -96,6 +96,8 @@ class RVOrbit(object):
     def m_f(self):
         return self._m_f * usys['mass']
 
+    def copy(self):
+        return copy.copy(self)
 
 class SimulatedRVOrbit(RVOrbit):
 

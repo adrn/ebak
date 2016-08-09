@@ -22,4 +22,4 @@ def find_t0(phi0, P, epoch):
         guess -= delta_phi / (2*np.pi) * P
         iter += 1
 
-    return EPOCH + guess
+    return epoch + guess

@@ -7,7 +7,7 @@ import astropy.units as u
 import numpy as np
 
 # Project
-from .. import usys
+from ..units import usys
 from ..celestialmechanics_class import SimulatedRVOrbit
 
 __all__ = ['OrbitModel']
@@ -15,7 +15,6 @@ __all__ = ['OrbitModel']
 # Magic numbers:
 _ivar_disk = (1 / (30.*u.km/u.s)**2).decompose(usys).value # used in ln_prior
 jitter_scale = (0.3*u.km/u.s).decompose(usys).value # typical vel err.
-EPOCH = 55555. # used for un-modding phi0
 
 class OrbitModel(object):
     """
@@ -29,8 +28,9 @@ class OrbitModel(object):
         self.data = data
 
         if orbit is None:
-            orbit = SimulatedRVOrbit(np.nan*u.yr, np.nan*u.au, np.nan,
-                                     np.nan*u.radian, np.nan, v0=np.nan*u.km/u.s)
+            orbit = SimulatedRVOrbit(P=np.nan*u.yr, a_sin_i=np.nan*u.au,
+                                     ecc=np.nan, omega=np.nan*u.radian,
+                                     phi0=np.nan*u.radian, v0=np.nan*u.km/u.s)
         self.orbit = orbit
 
         self._s = s.decompose(usys).value
@@ -96,28 +96,6 @@ class OrbitModel(object):
         self.set_par_from_vec(p)
         return self.ln_posterior()
 
-    def from_vec(self, p):
-
-        # TODO: fix this
-
-        _P = np.exp(ln_P)
-        _asini = np.sqrt(asini_cos_phi0**2 + asini_sin_phi0**2)
-        _phi0 = np.arctan2(asini_sin_phi0, asini_cos_phi0)
-        # TODO: there should be a ._phi0 on Orbit
-
-        ecc = sqrte_cos_pomega**2 + sqrte_sin_pomega**2
-        _omega = np.arctan2(sqrte_sin_pomega, sqrte_cos_pomega)
-
-        orbit = SimulatedRVOrbit(P=_P*usys['time'],
-                                 a_sin_i=_asini*usys['length'],
-                                 ecc=ecc, omega=_omega*usys['angle'],
-                                 t0=_t0, v0=_v0*usys['length']/usys['time'])
-
-        # nuisance parameters
-        s = _s*usys['length']/usys['time']
-
-        return self.__class__(data=self.data, orbit=orbit, s=s)
-
     def set_par_from_vec(self, p):
         (ln_P,
          asini_cos_phi0, asini_sin_phi0,
@@ -135,14 +113,18 @@ class OrbitModel(object):
         self._s = _s
 
     def get_par_vec(self):
-        _phi0 = 2*np.pi*self.orbit._t0 / self.orbit._P
         return np.array([np.log(self.orbit._P),
-                         self.orbit._a_sin_i*np.cos(_phi0),
-                         self.orbit._a_sin_i*np.sin(_phi0),
+                         self.orbit._a_sin_i*np.cos(self.orbit._phi0),
+                         self.orbit._a_sin_i*np.sin(self.orbit._phi0),
                          np.sqrt(self.orbit.ecc)*np.cos(self.orbit._omega),
                          np.sqrt(self.orbit.ecc)*np.sin(self.orbit._omega),
                          self.orbit._v0,
                          self._s])
+
+    def from_vec(self, p):
+        _model = self.copy()
+        _model.set_par_from_vec(p)
+        return _model
 
     def vec_to_plot_pars(self, p):
         """

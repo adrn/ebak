@@ -176,5 +176,26 @@ class OrbitModel(object):
     def copy(self):
         return self.__copy__()
 
-    # def plot_rv_samples(self, ):
-    #   pass
+    def plot_rv_samples(self, sampler, ax=None, **kwargs):
+        """
+        """
+        if ax is None:
+            fig,ax = plt.subplots(1,1)
+
+        style = kwargs.copy()
+        style.setdefault('alpha', 2.5/sampler.chain.shape[0])
+        style.setdefault('color', '#de2d26')
+
+        # plot the last position of the walkers
+        for p in sampler.chain[:,-1]:
+            orbit = self.from_vec(p).orbit
+            orbit.plot(ax=ax, **style)
+
+        _diff = self.data.rv.max() - self.data.rv.min()
+        ax.set_ylim((self.data.rv.min()-0.25*_diff).to(u.km/u.s).value,
+                    (self.data.rv.max()+0.25*_diff).to(u.km/u.s).value)
+
+        ax.set_xlabel('time [MJD]')
+        ax.set_ylabel('RV [km/s]')
+
+        return ax.figure

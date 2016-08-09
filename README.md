@@ -1,4 +1,4 @@
-Binaries in APOGEE and Kepler
-=============================
+Binary stars in APOGEE
+======================
 
-Stuff.
+Sup.

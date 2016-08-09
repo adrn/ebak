@@ -183,15 +183,21 @@ class OrbitModel(object):
             fig,ax = plt.subplots(1,1)
 
         style = kwargs.copy()
-        style.setdefault('alpha', 2.5/sampler.chain.shape[0])
+        style.setdefault('alpha', 10/sampler.chain.shape[0])
         style.setdefault('color', '#de2d26')
 
+        _tdiff = self.data._t.max() - self.data._t.min()
+        t = np.linspace(self.data._t.min() - _tdiff*0.1,
+                        self.data._t.max() + _tdiff*0.1, 1024)
+
         # plot the last position of the walkers
+        _model = self.copy()
         for p in sampler.chain[:,-1]:
-            orbit = self.from_vec(p).orbit
-            orbit.plot(ax=ax, **style)
+            _model.set_par_from_vec(p)
+            _model.orbit.plot(t=t, ax=ax, **style)
 
         _diff = self.data.rv.max() - self.data.rv.min()
+        ax.set_xlim(t.min(), t.max())
         ax.set_ylim((self.data.rv.min()-0.25*_diff).to(u.km/u.s).value,
                     (self.data.rv.max()+0.25*_diff).to(u.km/u.s).value)
 

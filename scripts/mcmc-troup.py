@@ -1,5 +1,9 @@
 """
-Run MCMC on all Troup stars...
+Run MCMC on RV curves for all Troup stars.
+
+TODO:
+- Write out chain to an HDF5 file
+- Preserve initial orbit guess
 """
 
 from __future__ import division, print_function
@@ -80,7 +84,7 @@ def troup_to_orbit(row, data):
     res = minimize(min_func, x0=x0, method='powell',
                    args=(data,troup_orbit.copy()))
 
-    if res.success is False:
+    if not res.success:
         raise ValueError("Failed to optimize orbit parameters.")
 
     orbit = troup_orbit.copy()

@@ -4,6 +4,7 @@ Run MCMC on RV curves for all Troup stars.
 TODO:
 - Write out chain to an HDF5 file
 - Preserve initial orbit guess
+- If eccentric_anomaly_from_mean_anomaly() raises a warning, return -np.inf?
 """
 
 from __future__ import division, print_function
@@ -40,8 +41,11 @@ _basepath = split(abspath(join(__file__, "..")))[0]
 TROUP_DATA_PATH = join(_basepath, "data", "troup16-dr12.csv")
 ALLVISIT_DATA_PATH = join(_basepath, "data", "allVisit-l30e.2.fits")
 PLOT_PATH = join(_basepath, "plots", "troup")
-if not exists(PLOT_PATH):
-    os.mkdir(PLOT_PATH)
+OUTPUT_PATH = join(_basepath, "output")
+for PATH in [PLOT_PATH, OUTPUT_PATH]:
+    if not exists(PATH):
+        os.makedirs(PATH)
+OUTPUT_FILENAME = join(OUTPUT_PATH, "troup.hdf5")
 
 def allVisit_to_rvdata(rows):
     rv = np.array(rows['VHELIO']) * u.km/u.s
@@ -49,7 +53,7 @@ def allVisit_to_rvdata(rows):
     t = atime.Time(np.array(rows['JD']), format='jd', scale='tcb')
     return RVData(t, rv, ivar)
 
-def troup_to_orbit(row, data):
+def troup_to_init_orbit(row, data):
     ecc = row['ECC'][0]
     m_f = row['MASSFN'][0]*u.Msun
     K = row['SEMIAMP'][0]*u.m/u.s
@@ -92,7 +96,45 @@ def troup_to_orbit(row, data):
 
     return orbit
 
-def main(apogee_id, n_walkers, n_steps):
+def plot_mcmc_diagnostics(sampler, model, sampler_name, apogee_id):
+
+    # Acceptance
+    fig,ax = plt.subplots(1,1,figsize=(8,6))
+    ax.plot(sampler.acceptance_fraction, 'k', alpha=.5)
+
+    if sample_name == "kombine":
+        ax.set_xlabel("step")
+        ax.set_ylabel("mean acceptance fraction")
+    elif sampler_name == "emcee":
+        ax.set_xlabel("walker num")
+        ax.set_ylabel("acceptance fraction")
+
+    fig.savefig(join(PLOT_PATH, "{}-3-accep.png".format(apogee_id)), dpi=256)
+
+    # MCMC walker trace
+    fig,axes = plt.subplots(p0.shape[1], 1, figsize=(6,3*p0.shape[1]), sharex=True)
+    for i in range(p0.shape[1]):
+        axes[i].set_ylabel(model.vec_labels[i])
+        axes[i].plot(sampler.chain[...,i].T, drawstyle='steps',
+                     alpha=0.1, marker=None)
+        axes[i].plot(sampler.chain[:,-1,i], marker='.', alpha=0.25, color='k')
+
+    axes[i].set_xlim(0, p0.shape[0] + 2)
+    fig.savefig(join(PLOT_PATH, "{}-4-walkers.png".format(apogee_id)), dpi=256)
+
+# ---
+
+def main(apogee_id, n_walkers, n_steps, sampler_name, n_burnin=128,
+         mpi=False, seed=42, overwrite=False):
+
+    # TODO: handle MPI shite here
+
+    if exists(OUTPUT_FILENAME) and not overwrite:
+        with h5py.File(OUTPUT_FILENAME) as f:
+            if '{}'.format(apogee_id) in f.groups():
+                logger.info("{} has already been modeled - use '--overwrite' "
+                            "to re-run MCMC for this target.")
+
     # load data files -- Troup catalog and full APOGEE allVisit file
     _troup = np.genfromtxt(TROUP_DATA_PATH, delimiter=",",
                            names=True, dtype=None)
@@ -104,7 +146,7 @@ def main(apogee_id, n_walkers, n_steps):
     # read data and orbit parameters and produce initial guess for MCMC
     logger.debug("Reading data from Troup catalog and allVisit files...")
     data = allVisit_to_rvdata(target)
-    troup_orbit = troup_to_orbit(troup, data)
+    troup_orbit = troup_to_init_orbit(troup, data)
 
     # first figure is initial guess
     logger.debug("Plotting initial guess...")
@@ -138,15 +180,50 @@ def main(apogee_id, n_walkers, n_steps):
     # special treatment for s
     p0[:,6] = np.abs(np.random.normal(0, 1E-3, size=p0.shape[0]) * u.km/u.s).decompose(usys).value
 
-    sampler = emcee.EnsembleSampler(n_walkers, dim=p0.shape[1], lnpostfn=model)
+    if sampler_name == 'emcee':
+        sampler = emcee.EnsembleSampler(n_walkers, dim=p0.shape[1], lnpostfn=model)
+
+    elif sampler_name == 'kombine':
+        sampler = kombine.Sampler(n_walkers, ndim=p0.shape[1], lnpostfn=model)
+
+    else:
+        raise ValueError("Invalid sampler name '{}'".format(sampler_name))
 
     # make sure all initial conditions return finite probabilities
     for pp in p0:
         assert np.isfinite(model(pp))
 
+    # burn-in phase
+    if n_burnin > 0:
+        logger.debug("Burning in the MCMC sampler for {} steps...".format(n_steps))
+
+        if sampler_name == 'kombine':
+            sampler.burnin(p0)
+        else:
+            pos,_,_ = sampler.run_mcmc(p0, N=n_steps)
+            sampler.reset()
+
+    else:
+        pos = p0
+
     # run the damn sampler!
     logger.debug("Running the MCMC sampler for {} steps...".format(n_steps))
-    pos,_,_ = sampler.run_mcmc(p0, N=n_steps)
+    if sampler_name == 'kombine':
+        pos,_,_ = sampler.run_mcmc(n_steps)
+    else:
+        pos,_,_ = sampler.run_mcmc(pos, N=n_steps)
+
+    # output the chain and metadata to HDF5 file
+    with h5py.File(OUTPUT_FILENAME, 'a') as f: # read/write if exists, create otherwise
+        f.create_group(apogee_id)
+
+        f[apogee_id].create_dataset('p0', data=p0)
+        f[apogee_id].create_dataset('chain', data=sampler.chain)
+
+        # metadata
+        f[apogee_id].attrs['n_walkers'] = n_walkers
+        f[apogee_id].attrs['n_steps'] = n_steps
+        f[apogee_id].attrs['n_burnin'] = n_burnin
 
     # plot orbits computed from the samples
     logger.debug("Plotting the MCMC samples...")
@@ -166,6 +243,9 @@ def main(apogee_id, n_walkers, n_steps):
     fig.savefig(join(PLOT_PATH, "{}-2-corner.png".format(apogee_id)), dpi=256)
     logger.debug("done!")
 
+    # make MCMC diagnostic plots as well (e.g., acceptance fraction, chain traces)
+    plot_mcmc_diagnostics(sampler, model, sampler_name, apogee_id)
+
 if __name__ == "__main__":
     from argparse import ArgumentParser
     import logging
@@ -176,13 +256,24 @@ if __name__ == "__main__":
                         default=False, help="Be chatty! (default = False)")
     parser.add_argument("-q", "--quiet", action="store_true", dest="quiet",
                         default=False, help="Be quiet! (default = False)")
+    parser.add_argument("-o", "--overwrite", dest="overwrite", default=False,
+                        action="store_true", help="Overwrite any existing data.")
+    parser.add_argument("--seed", dest="seed", default=42, type=int,
+                        help="Random number seed")
+
     parser.add_argument("--id", dest="apogee_id", default=None, required=True,
                         type=str, help="APOGEE ID")
 
+    # MCMC
     parser.add_argument("--n-steps", dest="n_steps", default=4096,
                         type=int, help="Number of MCMC steps")
     parser.add_argument("--n-walkers", dest="n_walkers", default=256,
                         type=int, help="Number of MCMC walkers")
+    parser.add_argument("--n-burn", dest="n_burnin", default=128,
+                        type=int, help="Number of MCMC burn-in steps")
+    parser.add_argument("-s", "--sampler", dest="sampler_name", default="kombine",
+                        type=str, help="Which MCMC sampler to use",
+                        choices=["emcee", "kombine"])
 
     args = parser.parse_args()
 
@@ -194,4 +285,9 @@ if __name__ == "__main__":
     else:
         logger.setLevel(logging.INFO)
 
-    main(args.apogee_id, n_walkers=args.n_walkers, n_steps=args.n_steps)
+    np.random.seed(args.seed)
+
+    main(args.apogee_id, n_walkers=args.n_walkers, n_steps=args.n_steps,
+         n_burnin=args.n_burn,
+         sampler_name=args.sampler_name,
+         overwrite=args.overwrite)

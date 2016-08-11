@@ -61,7 +61,7 @@ class OrbitModel(object):
         # Jitter: for velocity error model
         if self._s < 0.:
             return -np.inf
-        lnp += -4 * self._s / jitter_scale # HACK: the factor of 4
+        lnp += -self._s / jitter_scale
 
         # Mass function: log-normal centered on ln(3)
         # - Numbers chosen from Troup et al. (2016)

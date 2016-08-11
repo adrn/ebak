@@ -109,7 +109,7 @@ class RVOrbit(object):
     @staticmethod
     def P_K_ecc_to_mf_asini_ecc(P, K, ecc):
         asini = K*P / (2*np.pi) * np.sqrt(1-ecc**2)
-        mf = _P * _K**3 / (2*np.pi*_G) * (1 - ecc**2)**(3/2.)
+        mf = P * _K**3 / (2*np.pi*_G) * (1 - ecc**2)**(3/2.)
         return mf, asini
 
 class SimulatedRVOrbit(RVOrbit):

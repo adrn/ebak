@@ -45,7 +45,7 @@ def mean_anomaly_from_eccentric_anomaly(Es, e):
     """
     return Es - e * np.sin(Es)
 
-def eccentric_anomaly_from_mean_anomaly(Ms, e, tol=1E-14, maxiter=1024):
+def eccentric_anomaly_from_mean_anomaly(Ms, e, tol=1E-13, maxiter=128):
     """
     Parameters
     ----------

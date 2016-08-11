@@ -1,5 +1,56 @@
+\documentclass[12pt, preprint]{aastex}
+
+\newcommand{\project}[1]{\textsl{#1}}
+\newcommand{\acronym}[1]{{\small{#1}}}
+\newcommand{\apogee}{\project{\acronym{APOGEE}}}
+\newcommand{\dr}{\acronym{DR13}}
+
+\newcommand{\meterspersecond}{\mathrm{m\,s^{-1}}}
+
 \begin{document}
 
-Hello world!
+\title{Binary orbital parameters and population statistics
+  from stars with only a few radial velocity measurements each}
+\author{APW, DWH, HWR, others}
+
+\begin{abstract}
+With sufficient time coverage and velocity precision, it is possible
+to determine (up to an inclination) the orbital parameters of a binary
+star system, with measurements only of the radial velocity of one of
+the two stars.
+In the context of new spectroscopy projects with limited time-domain
+coverage, it is important to find ways to make these determinations
+with fewer and more imperfect observations, and nonetheless learn
+important things about the binary stars and their population.
+Here create a likelihood function, including a stellar noise model and
+an observation outlier (catastrophic error) model, and demonstrate
+that it is possible to perform probabilistic inference with Monte
+Carlo methods under vague (interim) priors.
+We also use an importance-sampling technique we have used previously
+in exoplanet contexts to perform a hierarchical inference of the
+properties of the full population of binary star systems, given only
+(sometimes fairly uninformative) posterior samplings under the interim
+priors.
+We deploy this inference at scale on data on 83,661 stars taken from
+\apogee\ \dr\, with a minimum of YY and an average of XX
+radial-velocity measurements per star, with typical uncertainties of
+about $300\,\meterspersecond$.
+We perform only a limited hierarchical inference and find ZZ and WW.
+We compare our results to literature results for the same stars and
+find that especially with small numbers of epochs ($<8$)---but even
+with large numbers of epochs---there are often multiple qualitatively
+different but nonetheless reasonable orbital explanations for any
+individual system.
+\end{abstract}
+
+\keywords{
+  ---
+  Hello
+  ---
+  World: Hello
+  ---
+}
+
+Hello World.
 
 \end{document}

@@ -45,7 +45,6 @@ OUTPUT_PATH = join(_basepath, "output")
 for PATH in [PLOT_PATH, OUTPUT_PATH]:
     if not exists(PATH):
         os.makedirs(PATH)
-OUTPUT_FILENAME = join(OUTPUT_PATH, "troup.hdf5")
 
 def allVisit_to_rvdata(rows):
     rv = np.array(rows['VHELIO']) * u.km/u.s
@@ -129,6 +128,7 @@ def main(apogee_id, n_walkers, n_steps, sampler_name, n_burnin=128,
 
     # TODO: handle MPI shite here
 
+    OUTPUT_FILENAME = join(OUTPUT_PATH, "troup-{}.hdf5".format(sampler_name))
     if exists(OUTPUT_FILENAME) and not overwrite:
         with h5py.File(OUTPUT_FILENAME) as f:
             if '{}'.format(apogee_id) in f.groups():

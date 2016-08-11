@@ -93,4 +93,4 @@ def test_everything():
 #                 break
 
 #     _model = model.from_vec(pp)
-#     print(_model.orbit.K.to(u.km/u.s), _model.orbit.ecc, _model.orbit.m_f)
+#     print(_model.orbit.K.to(u.km/u.s), _model.orbit.ecc, _model.orbit.mf)

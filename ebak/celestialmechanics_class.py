@@ -60,7 +60,7 @@ class RVOrbit(object):
         return 2*np.pi / (self._P * np.sqrt(1-self.ecc**2)) * self._a_sin_i
 
     @property
-    def _m_f(self):
+    def _mf(self):
         return self._P * self._K**3 / (2*np.pi*_G) * (1 - self.ecc**2)**(3/2.)
 
     @property
@@ -93,16 +93,24 @@ class RVOrbit(object):
         return self._K * usys['length'] / usys['time']
 
     @property
-    def m_f(self):
-        return self._m_f * usys['mass']
+    def mf(self):
+        return self._mf * usys['mass']
 
     def copy(self):
         return copy.copy(self)
 
     # convenience methods
     @staticmethod
-    def m_f_K_ecc_to_asini(m_f, K, ecc):
-        return (G * m_f / ((1-ecc**2) * K**2)).to(usys['length'])
+    def mf_asini_ecc_to_P_K(mf, asini, ecc):
+         P = 2*np.pi * asini**(3./2) / np.sqrt(G * mf)
+         K = 2*np.pi * asini / (P * np.sqrt(1-ecc**2))
+         return P, K
+
+    @staticmethod
+    def P_K_ecc_to_mf_asini_ecc(P, K, ecc):
+        asini = K*P / (2*np.pi) * np.sqrt(1-ecc**2)
+        mf = _P * _K**3 / (2*np.pi*_G) * (1 - ecc**2)**(3/2.)
+        return mf, asini
 
 class SimulatedRVOrbit(RVOrbit):
 

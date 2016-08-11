@@ -65,9 +65,9 @@ class OrbitModel(object):
 
         # Mass function: log-normal centered on ln(3)
         # - Numbers chosen from Troup et al. (2016)
-        m_f = self.orbit._m_f
-        lnp += -0.5 * (np.log(m_f) - (-10.))**2 / (5.)**2
-        if m_f < 0:
+        mf = self.orbit._mf
+        lnp += -0.5 * (np.log(mf) - (-10.))**2 / (5.)**2
+        if mf < 0:
             return -np.inf
 
         # Orbital period: assumes sampler is stepping in log(P)
@@ -143,7 +143,7 @@ class OrbitModel(object):
             orbit = model.orbit
 
             return np.array([np.log(orbit.P.to(u.day).value),
-                             orbit.m_f.to(u.Msun).value,
+                             orbit.mf.to(u.Msun).value,
                              orbit.ecc,
                              orbit.omega.to(u.degree).value,
                              orbit.t0.mjd,
@@ -157,7 +157,7 @@ class OrbitModel(object):
                 model.set_par_from_vec(p[i])
                 orbit = model.orbit
                 all_pars.append([np.log(orbit.P.to(u.day).value),
-                                 orbit.m_f.to(u.Msun).value,
+                                 orbit.mf.to(u.Msun).value,
                                  orbit.ecc,
                                  orbit.omega.to(u.degree).value,
                                  orbit.t0.mjd,

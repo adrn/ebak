@@ -23,7 +23,7 @@ def test_orbitmodel():
     true_orbit = SimulatedRVOrbit(P=521.*u.day, a_sin_i=2*u.au, ecc=0.3523,
                                   omega=21.85*u.degree, phi0=-11.723*u.degree,
                                   v0=27.41*u.km/u.s)
-    assert (true_orbit.m_f > 1.*u.Msun) and (true_orbit.m_f < 10.*u.Msun) # sanity check
+    assert (true_orbit.mf > 1.*u.Msun) and (true_orbit.mf < 10.*u.Msun) # sanity check
 
     # generate RV curve
     t = np.random.uniform(55555., 57012., size=32)

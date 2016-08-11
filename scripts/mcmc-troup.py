@@ -55,7 +55,7 @@ def allVisit_to_rvdata(rows):
 
 def troup_to_init_orbit(row, data):
     ecc = row['ECC'][0]
-    m_f = row['MASSFN'][0]*u.Msun
+    mf = row['MASSFN'][0]*u.Msun
     K = row['SEMIAMP'][0]*u.m/u.s
 
     period = row['PERIOD'][0]*u.day
@@ -236,7 +236,7 @@ def main(apogee_id, n_walkers, n_steps, sampler_name, n_burnin=128,
     # make a corner plot
     flatchain = np.vstack(sampler.chain[:,-256:])
     plot_pars = model.vec_to_plot_pars(flatchain)
-    troup_vals = [np.log(troup_orbit.P.to(u.day).value), troup_orbit.m_f.value,
+    troup_vals = [np.log(troup_orbit.P.to(u.day).value), troup_orbit.mf.value,
                   troup_orbit.ecc, troup_orbit.omega.to(u.degree).value,
                   troup_orbit.t0.mjd, -troup_orbit.v0.to(u.km/u.s).value, 0.]
     fig = corner.corner(plot_pars, labels=model.plot_labels, truths=troup_vals)

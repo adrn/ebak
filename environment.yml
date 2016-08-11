@@ -8,8 +8,10 @@ dependencies:
   - cython
   - matplotlib
   - scipy
+  - h5py
   - pip
   - pip:
     - emcee
+    - kombine
     - astro-gala
 

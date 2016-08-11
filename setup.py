@@ -11,5 +11,5 @@ setup(name='ebak',
       license="License :: OSI Approved :: MIT License",
       description='Eclipsing binaries.',
       long_description=long_description,
-      packages=['ebak'],
+      packages=['ebak', 'ebak.singleline', 'ebak.doubleline'],
 )

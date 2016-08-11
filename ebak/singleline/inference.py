@@ -64,8 +64,9 @@ class OrbitModel(object):
         lnp += -self._s / jitter_scale
 
         # Mass function: log-normal centered on ln(3)
+        # - Numbers chosen from Troup et al. (2016)
         m_f = self.orbit._m_f
-        lnp += -0.5 * (np.log(m_f) - np.log(3.))**2 / (2.)**2
+        lnp += -0.5 * (np.log(m_f) - (-10.))**2 / (5.)**2
         if m_f < 0:
             return -np.inf
 
@@ -174,3 +175,33 @@ class OrbitModel(object):
                               s=self.s.copy())
     def copy(self):
         return self.__copy__()
+
+    def plot_rv_samples(self, sampler, ax=None, **kwargs):
+        """
+        """
+        if ax is None:
+            fig,ax = plt.subplots(1,1)
+
+        style = kwargs.copy()
+        style.setdefault('alpha', 10/sampler.chain.shape[0])
+        style.setdefault('color', '#de2d26')
+
+        _tdiff = self.data._t.max() - self.data._t.min()
+        t = np.linspace(self.data._t.min() - _tdiff*0.1,
+                        self.data._t.max() + _tdiff*0.1, 1024)
+
+        # plot the last position of the walkers
+        _model = self.copy()
+        for p in sampler.chain[:,-1]:
+            _model.set_par_from_vec(p)
+            _model.orbit.plot(t=t, ax=ax, **style)
+
+        _diff = self.data.rv.max() - self.data.rv.min()
+        ax.set_xlim(t.min(), t.max())
+        ax.set_ylim((self.data.rv.min()-0.25*_diff).to(u.km/u.s).value,
+                    (self.data.rv.max()+0.25*_diff).to(u.km/u.s).value)
+
+        ax.set_xlabel('time [MJD]')
+        ax.set_ylabel('RV [km/s]')
+
+        return ax.figure

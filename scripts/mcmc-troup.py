@@ -31,7 +31,7 @@ import corner
 from scipy.optimize import minimize
 
 # Project
-from ebak import SimulatedRVOrbit
+from ebak import SimulatedRVOrbit, EPOCH
 from ebak.singleline import RVData, OrbitModel
 from ebak.units import usys
 
@@ -64,8 +64,8 @@ def troup_to_init_orbit(row, data):
     v0 = row['V0']*u.m/u.s
     v_slope = row['SLOPE'][0]*u.m/u.s/u.day
 
-    t_peri = atime.Time(row['TPERI'][0], format='jd', scale='tcb')
-    phi0 = ((2*np.pi*(t_peri.tcb.mjd - 55555.) / period.to(u.day).value) % (2*np.pi)) * u.radian
+    t0 = atime.Time(row['T0'][0], format='jd', scale='tcb')
+    phi0 = 2*np.pi * (((t0.tcb.mjd - EPOCH) / period.to(u.day).value) % 1.) * u.radian
 
     # now, because we don't believe anything, we'll take the period and
     #   eccentricity as fixed and optimize to get all other parameters
@@ -74,6 +74,7 @@ def troup_to_init_orbit(row, data):
 
     def min_func(p, data, _orbit):
         a_sin_i, omega, phi0, v0 = p
+        # omega, phi0, v0 = p
 
         _orbit._a_sin_i = a_sin_i
         _orbit._omega = omega
@@ -82,8 +83,13 @@ def troup_to_init_orbit(row, data):
 
         return np.sum(data._ivar * (_orbit._generate_rv_curve(data._t) - data._rv)**2)
 
-    x0 = [asini.decompose(usys).value, omega.decompose(usys).value,
-          phi0.decompose(usys).value, -v0.decompose(usys).value]
+    # x0 = [omega.decompose(usys).value,
+    #       phi0.decompose(usys).value,
+    #       np.median(data._rv)]
+    x0 = [asini.decompose(usys).value,
+          omega.decompose(usys).value,
+          phi0.decompose(usys).value,
+          np.median(data._rv)]
     res = minimize(min_func, x0=x0, method='powell',
                    args=(data,troup_orbit.copy()))
 
@@ -92,8 +98,40 @@ def troup_to_init_orbit(row, data):
 
     orbit = troup_orbit.copy()
     orbit._a_sin_i, orbit._omega, orbit._phi0, orbit._v0 = res.x
+    # orbit._omega, orbit._phi0, orbit._v0 = res.x
 
     return orbit
+
+def plot_init_orbit(orbit, data, apogee_id):
+    logger.debug("Plotting initial guess...")
+
+    # TODO: make these arguments?
+    data_style = dict(marker='o', ecolor='#666666', linestyle='none',
+                      alpha=0.75, color='k', label='APOGEE data')
+    model_style = dict(marker=None, linestyle='-', color='#de2d26',
+                       alpha=0.6, label='Troup orbit')
+
+    fig,ax = plt.subplots(1,1,figsize=(8,6))
+
+    # data points
+    data_phase = ((data.t - orbit.t0) / orbit.P) % 1.
+    ax.errorbar(data_phase, data.rv.to(u.km/u.s).value,
+                data.stddev.to(u.km/u.s).value, **data_style)
+
+    # model curve
+    model_t = data.t.min() + \
+        atime.TimeDelta(np.linspace(0., orbit.P.value, 1024)*orbit.P.unit)
+    model_rv = orbit.generate_rv_curve(model_t).to(u.km/u.s)
+    model_phase = ((model_t - orbit.t0) / orbit.P) % 1.
+    idx = model_phase.argsort()
+    ax.plot(model_phase[idx], model_rv[idx], **model_style)
+
+    ax.set_xlim(-0.1, 1.1)
+    ax.set_title("Optimized orbit")
+    ax.set_xlabel("phase")
+    ax.set_ylabel("RV [km/s]")
+    fig.tight_layout()
+    fig.savefig(join(PLOT_PATH, "{}-0-initial.png".format(apogee_id)), dpi=256)
 
 def plot_mcmc_diagnostics(sampler, model, sampler_name, apogee_id):
 
@@ -149,21 +187,7 @@ def main(apogee_id, n_walkers, n_steps, sampler_name, n_burnin=128,
     troup_orbit = troup_to_init_orbit(troup, data)
 
     # first figure is initial guess
-    logger.debug("Plotting initial guess...")
-    fig,ax = plt.subplots(1,1,figsize=(8,6))
-    data.plot(ax=ax)
-    troup_orbit.plot(ax=ax)
-
-    _tdiff = data._t.max() - data._t.min()
-    t = np.linspace(data._t.min() - _tdiff*0.1,
-                    data._t.max() + _tdiff*0.1, 1024)
-    ax.set_xlim(t.min(), t.max())
-
-    ax.set_title("Initial guess orbit")
-    ax.set_xlabel("time [BJD]")
-    ax.set_ylabel("RV [km/s]")
-    fig.tight_layout()
-    fig.savefig(join(PLOT_PATH, "{}-0-initial.png".format(apogee_id)), dpi=256)
+    plot_init_orbit(troup_orbit, data, apogee_id)
 
     # create model object to evaluate prior, likelihood, posterior
     model = OrbitModel(data=data, orbit=troup_orbit.copy())
@@ -269,7 +293,7 @@ if __name__ == "__main__":
                         type=int, help="Number of MCMC steps")
     parser.add_argument("--n-walkers", dest="n_walkers", default=256,
                         type=int, help="Number of MCMC walkers")
-    parser.add_argument("--n-burn", dest="n_burnin", default=128,
+    parser.add_argument("--n-burnin", dest="n_burnin", default=128,
                         type=int, help="Number of MCMC burn-in steps")
     parser.add_argument("-s", "--sampler", dest="sampler_name", default="kombine",
                         type=str, help="Which MCMC sampler to use",
@@ -288,6 +312,6 @@ if __name__ == "__main__":
     np.random.seed(args.seed)
 
     main(args.apogee_id, n_walkers=args.n_walkers, n_steps=args.n_steps,
-         n_burnin=args.n_burn,
+         n_burnin=args.n_burnin,
          sampler_name=args.sampler_name,
          overwrite=args.overwrite)

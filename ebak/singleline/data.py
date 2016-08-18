@@ -39,6 +39,10 @@ class RVData(object):
         return at.Time(self._t, scale='tcb', format='mjd')
 
     @property
+    def phase(self, t0, P):
+        return ((self.t - t0) / P) % 1.
+
+    @property
     def rv(self):
         return self._rv * usys['length'] / usys['time']
 

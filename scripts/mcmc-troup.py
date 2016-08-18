@@ -22,6 +22,7 @@ import astropy.table as tbl
 import astropy.time as atime
 import astropy.coordinates as coord
 import astropy.units as u
+import h5py 
 
 import emcee
 import kombine
@@ -140,7 +141,7 @@ def plot_mcmc_diagnostics(sampler, model, sampler_name, apogee_id):
     fig,ax = plt.subplots(1,1,figsize=(8,6))
     ax.plot(sampler.acceptance_fraction, 'k', alpha=.5)
 
-    if sample_name == "kombine":
+    if sampler_name == "kombine":
         ax.set_xlabel("step")
         ax.set_ylabel("mean acceptance fraction")
     elif sampler_name == "emcee":

@@ -12,6 +12,7 @@ dependencies:
   - pip
   - pip:
     - emcee
+    - corner
     - kombine
     - astro-gala
 

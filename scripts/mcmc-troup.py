@@ -24,6 +24,7 @@ import astropy.coordinates as coord
 import astropy.units as u
 
 import emcee
+import kombine
 import matplotlib.pyplot as plt
 import numpy as np
 plt.style.use('apw-notebook')

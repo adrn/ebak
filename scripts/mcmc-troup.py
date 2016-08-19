@@ -137,7 +137,7 @@ def plot_init_orbit(orbit, data, apogee_id):
     fig.tight_layout()
     fig.savefig(join(PLOT_PATH, "{}-0-initial.png".format(apogee_id)), dpi=256)
 
-def plot_mcmc_diagnostics(sampler, model, sampler_name, apogee_id):
+def plot_mcmc_diagnostics(sampler, p0, model, sampler_name, apogee_id):
 
     # Acceptance
     fig,ax = plt.subplots(1,1,figsize=(8,6))
@@ -287,7 +287,7 @@ def main(apogee_id, n_walkers, n_steps, sampler_name, n_burnin=128,
     logger.debug("done!")
 
     # make MCMC diagnostic plots as well (e.g., acceptance fraction, chain traces)
-    plot_mcmc_diagnostics(sampler, model, sampler_name, apogee_id)
+    plot_mcmc_diagnostics(sampler, p0, model, sampler_name, apogee_id)
 
 if __name__ == "__main__":
     from argparse import ArgumentParser

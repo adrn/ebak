@@ -166,11 +166,18 @@ def plot_mcmc_diagnostics(sampler, p0, model, sampler_name, apogee_id):
 
 # ---
 
-def main(apogee_id, n_walkers, n_steps, sampler_name, n_burnin=128,
+def main(apogee_id, index, n_walkers, n_steps, sampler_name, n_burnin=128,
          mpi=False, seed=42, overwrite=False):
 
     # MPI shite
     pool = get_pool(mpi=mpi)
+
+    # read in Troup catalog
+    _troup = np.genfromtxt(TROUP_DATA_PATH, delimiter=",",
+                           names=True, dtype=None)
+
+    if index is not None and apogee_id is None:
+        apogee_id = _troup['APOGEE_ID'].astype(str)[index]
 
     OUTPUT_FILENAME = join(OUTPUT_PATH, "troup-{}.hdf5".format(sampler_name))
     if exists(OUTPUT_FILENAME) and not overwrite:
@@ -180,10 +187,7 @@ def main(apogee_id, n_walkers, n_steps, sampler_name, n_burnin=128,
                             "to re-run MCMC for this target.")
 
     # load data files -- Troup catalog and full APOGEE allVisit file
-    _troup = np.genfromtxt(TROUP_DATA_PATH, delimiter=",",
-                           names=True, dtype=None)
     troup = tbl.Table(_troup[_troup['APOGEE_ID'].astype(str) == apogee_id])
-
     _allvisit = fits.getdata(ALLVISIT_DATA_PATH, 1)
     target = tbl.Table(_allvisit[_allvisit['APOGEE_ID'].astype(str) == apogee_id])
 
@@ -201,38 +205,39 @@ def main(apogee_id, n_walkers, n_steps, sampler_name, n_burnin=128,
 
     # sample initial conditions for walkers
     logger.debug("Generating initial conditions for MCMC walkers...")
+    p0 = emcee.utils.sample_ball(model.get_par_vec(),
+                                 1E-3*model.get_par_vec(),
+                                 size=n_walkers)
+
+    # special treatment for ln_P
+    p0[:,0] = np.random.normal(np.log(model.orbit._P), 0.5, size=p0.shape[0])
+
+    # special treatment for s
+    p0[:,6] = np.abs(np.random.normal(0, 1E-3, size=p0.shape[0]) * u.km/u.s).decompose(usys).value
+
     if sampler_name == 'emcee':
-        p0 = emcee.utils.sample_ball(model.get_par_vec(),
-                                     1E-3*model.get_par_vec(),
-                                     size=n_walkers)
-
-        # special treatment for ln_P
-        p0[:,0] = np.random.normal(np.log(model.orbit._P), 0.5, size=p0.shape[0])
-
-        # special treatment for s
-        p0[:,6] = np.abs(np.random.normal(0, 1E-3, size=p0.shape[0]) * u.km/u.s).decompose(usys).value
-
         sampler = emcee.EnsembleSampler(n_walkers, dim=n_dim,
                                         lnpostfn=model, pool=pool)
 
     elif sampler_name == 'kombine':
-        p0 = np.zeros((n_walkers, n_dim))
+        # TODO: add option for Prior-sampeld initial conditions
+        # p0 = np.zeros((n_walkers, n_dim))
 
-        p0[:,0] = np.random.uniform(1., 8., n_walkers)
+        # p0[:,0] = np.random.uniform(1., 8., n_walkers)
 
-        _asini = np.random.uniform(-1., 3., n_walkers)
-        _phi0 = np.random.uniform(0, 2*np.pi, n_walkers)
-        p0[:,1] = _asini * np.cos(_phi0)
-        p0[:,2] = _asini * np.sin(_phi0)
+        # _asini = np.random.uniform(-1., 3., n_walkers)
+        # _phi0 = np.random.uniform(0, 2*np.pi, n_walkers)
+        # p0[:,1] = _asini * np.cos(_phi0)
+        # p0[:,2] = _asini * np.sin(_phi0)
 
-        _ecc = np.random.uniform(0, 1, n_walkers)
-        _omega = np.random.uniform(0, 2*np.pi, n_walkers)
-        p0[:,3] = np.sqrt(_ecc) * np.cos(_omega)
-        p0[:,4] = np.sqrt(_ecc) * np.sin(_omega)
+        # _ecc = np.random.uniform(0, 1, n_walkers)
+        # _omega = np.random.uniform(0, 2*np.pi, n_walkers)
+        # p0[:,3] = np.sqrt(_ecc) * np.cos(_omega)
+        # p0[:,4] = np.sqrt(_ecc) * np.sin(_omega)
 
-        p0[:,5] = (np.random.normal(0., 75., n_walkers) * u.km/u.s).decompose(usys).value
+        # p0[:,5] = (np.random.normal(0., 75., n_walkers) * u.km/u.s).decompose(usys).value
 
-        p0[:,6] = (np.exp(np.random.uniform(-8, 0., n_walkers)) * u.km/u.s).decompose(usys).value
+        # p0[:,6] = (np.exp(np.random.uniform(-8, 0., n_walkers)) * u.km/u.s).decompose(usys).value
 
         sampler = kombine.Sampler(n_walkers, ndim=n_dim,
                                   lnpostfn=model, pool=pool)
@@ -324,8 +329,11 @@ if __name__ == "__main__":
     parser.add_argument("--seed", dest="seed", default=42, type=int,
                         help="Random number seed")
 
-    parser.add_argument("--id", dest="apogee_id", default=None, required=True,
-                        type=str, help="APOGEE ID")
+    group = parser.add_mutually_exclusive_group(required=True)
+    group.add_argument("--id", dest="apogee_id", default=None,
+                       type=str, help="APOGEE ID")
+    group.add_argument("--index", dest="index", default=None, type=int,
+                       help="Index of Troup target to run.")
 
     # MCMC
     parser.add_argument("--mpi", dest="mpi", default=False, action="store_true",
@@ -352,7 +360,7 @@ if __name__ == "__main__":
 
     np.random.seed(args.seed)
 
-    main(args.apogee_id, n_walkers=args.n_walkers, n_steps=args.n_steps,
+    main(args.apogee_id, index=args.index, n_walkers=args.n_walkers, n_steps=args.n_steps,
          mpi=args.mpi, n_burnin=args.n_burnin,
          sampler_name=args.sampler_name,
          overwrite=args.overwrite)

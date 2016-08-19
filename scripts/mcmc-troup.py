@@ -251,15 +251,18 @@ def main(apogee_id, n_walkers, n_steps, sampler_name, n_burnin=128,
 
     # output the chain and metadata to HDF5 file
     with h5py.File(OUTPUT_FILENAME, 'a') as f: # read/write if exists, create otherwise
-        f.create_group(apogee_id)
+        if apogee_id in f:
+            g = f[apogee_id]
+        else:
+            g = f.create_group(apogee_id)
 
-        f[apogee_id].create_dataset('p0', data=p0)
-        f[apogee_id].create_dataset('chain', data=sampler.chain)
+        g['p0'] = p0
+        g['chain'] = sampler.chain
 
         # metadata
-        f[apogee_id].attrs['n_walkers'] = n_walkers
-        f[apogee_id].attrs['n_steps'] = n_steps
-        f[apogee_id].attrs['n_burnin'] = n_burnin
+        g.attrs['n_walkers'] = n_walkers
+        g.attrs['n_steps'] = n_steps
+        g.attrs['n_burnin'] = n_burnin
 
     # plot orbits computed from the samples
     logger.debug("Plotting the MCMC samples...")

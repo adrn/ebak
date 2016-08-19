@@ -158,7 +158,7 @@ def plot_mcmc_diagnostics(sampler, p0, model, sampler_name, apogee_id):
         axes[i].set_ylabel(model.vec_labels[i])
         axes[i].plot(sampler.chain[...,i].T, drawstyle='steps',
                      alpha=0.1, marker=None)
-        axes[i].plot(sampler.chain[:,-1,i], marker='.', alpha=0.25, color='k')
+        # axes[i].plot(sampler.chain[:,-1,i], marker='.', alpha=0.25, color='k')
 
     axes[i].set_xlim(0, p0.shape[0] + 2)
     fig.savefig(join(PLOT_PATH, "{}-4-walkers.png".format(apogee_id)), dpi=256)

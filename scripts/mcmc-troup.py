@@ -251,6 +251,9 @@ def main(apogee_id, n_walkers, n_steps, sampler_name, n_burnin=128,
 
     # output the chain and metadata to HDF5 file
     with h5py.File(OUTPUT_FILENAME, 'a') as f: # read/write if exists, create otherwise
+        pass
+
+    with h5py.File(OUTPUT_FILENAME, 'r+') as f: # read/write if exists, create otherwise
         if apogee_id in f:
             g = f[apogee_id]
         else:

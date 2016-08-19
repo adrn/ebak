@@ -174,7 +174,7 @@ def main(apogee_id, n_walkers, n_steps, sampler_name, n_burnin=128,
     OUTPUT_FILENAME = join(OUTPUT_PATH, "troup-{}.hdf5".format(sampler_name))
     if exists(OUTPUT_FILENAME) and not overwrite:
         with h5py.File(OUTPUT_FILENAME) as f:
-            if '{}'.format(apogee_id) in f.groups():
+            if apogee_id in f.groups():
                 logger.info("{} has already been modeled - use '--overwrite' "
                             "to re-run MCMC for this target.")
 
@@ -251,16 +251,17 @@ def main(apogee_id, n_walkers, n_steps, sampler_name, n_burnin=128,
 
     # output the chain and metadata to HDF5 file
     with h5py.File(OUTPUT_FILENAME, 'a') as f: # read/write if exists, create otherwise
-        pass
+        if apogee_id in f and overwrite:
+            del f[apogee_id]
 
-    with h5py.File(OUTPUT_FILENAME, 'r+') as f: # read/write if exists, create otherwise
-        if apogee_id in f:
-            g = f[apogee_id]
-        else:
-            g = f.create_group(apogee_id)
+        elif apogee_id in f and not overwrite:
+            # should not get here!!
+            raise RuntimeError("How did I get here???")
 
-        g['p0'] = p0
-        g['chain'] = sampler.chain
+        g = f.create_group(apogee_id)
+
+        g.create_dataset('p0', data=p0)
+        g.create_dataset('chain'], data=sampler.chain)
 
         # metadata
         g.attrs['n_walkers'] = n_walkers

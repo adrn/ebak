@@ -54,7 +54,8 @@ def allVisit_to_rvdata(rows):
     rv = np.array(rows['VHELIO']) * u.km/u.s
     ivar = 1 / (np.array(rows['VRELERR'])*u.km/u.s)**2
     t = atime.Time(np.array(rows['JD']), format='jd', scale='tcb')
-    return RVData(t, rv, ivar)
+    idx = np.isfinite(rv.value) & np.isfinite(t.value) & np.isfinite(ivar.value)
+    return RVData(t[idx], rv[idx], ivar[idx])
 
 def troup_to_init_orbit(row, data):
     ecc = row['ECC'][0]
@@ -93,7 +94,7 @@ def troup_to_init_orbit(row, data):
     x0 = [asini.decompose(usys).value,
           omega.decompose(usys).value,
           phi0.decompose(usys).value,
-          np.median(data._rv)]
+          -np.median(data._rv)]
     res = minimize(min_func, x0=x0, method='powell',
                    args=(data,troup_orbit.copy()))
 

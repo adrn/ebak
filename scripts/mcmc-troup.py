@@ -14,6 +14,7 @@ __author__ = "adrn <adrn@astro.columbia.edu>"
 # Standard library
 import os
 from os.path import abspath, join, split, exists
+import time
 
 # Third-party
 from astropy import log as logger
@@ -22,7 +23,7 @@ import astropy.table as tbl
 import astropy.time as atime
 import astropy.coordinates as coord
 import astropy.units as u
-import h5py 
+import h5py
 
 import emcee
 import kombine
@@ -31,6 +32,7 @@ import numpy as np
 plt.style.use('apw-notebook')
 import corner
 from scipy.optimize import minimize
+from gala.util import get_pool
 
 # Project
 from ebak import SimulatedRVOrbit, EPOCH
@@ -166,7 +168,8 @@ def plot_mcmc_diagnostics(sampler, model, sampler_name, apogee_id):
 def main(apogee_id, n_walkers, n_steps, sampler_name, n_burnin=128,
          mpi=False, seed=42, overwrite=False):
 
-    # TODO: handle MPI shite here
+    # MPI shite
+    pool = get_pool(mpi=mpi)
 
     OUTPUT_FILENAME = join(OUTPUT_PATH, "troup-{}.hdf5".format(sampler_name))
     if exists(OUTPUT_FILENAME) and not overwrite:
@@ -207,10 +210,12 @@ def main(apogee_id, n_walkers, n_steps, sampler_name, n_burnin=128,
     p0[:,6] = np.abs(np.random.normal(0, 1E-3, size=p0.shape[0]) * u.km/u.s).decompose(usys).value
 
     if sampler_name == 'emcee':
-        sampler = emcee.EnsembleSampler(n_walkers, dim=p0.shape[1], lnpostfn=model)
+        sampler = emcee.EnsembleSampler(n_walkers, dim=p0.shape[1],
+                                        lnpostfn=model, pool=pool)
 
     elif sampler_name == 'kombine':
-        sampler = kombine.Sampler(n_walkers, ndim=p0.shape[1], lnpostfn=model)
+        sampler = kombine.Sampler(n_walkers, ndim=p0.shape[1],
+                                  lnpostfn=model, pool=pool)
 
     else:
         raise ValueError("Invalid sampler name '{}'".format(sampler_name))
@@ -233,11 +238,14 @@ def main(apogee_id, n_walkers, n_steps, sampler_name, n_burnin=128,
         pos = p0
 
     # run the damn sampler!
-    logger.debug("Running the MCMC sampler for {} steps...".format(n_steps))
+    logger.info("Running MCMC sampler for {} steps...".format(n_steps))
     if sampler_name == 'kombine':
         pos,_,_ = sampler.run_mcmc(n_steps)
     else:
         pos,_,_ = sampler.run_mcmc(pos, N=n_steps)
+
+    pool.close()
+    logger.info("done sampling after {} seconds.".format(time.time()-_t1))
 
     # output the chain and metadata to HDF5 file
     with h5py.File(OUTPUT_FILENAME, 'a') as f: # read/write if exists, create otherwise
@@ -291,6 +299,8 @@ if __name__ == "__main__":
                         type=str, help="APOGEE ID")
 
     # MCMC
+    parser.add_argument("--mpi", dest="mpi", default=False, action="store_true",
+                        help="Run with MPI.")
     parser.add_argument("--n-steps", dest="n_steps", default=4096,
                         type=int, help="Number of MCMC steps")
     parser.add_argument("--n-walkers", dest="n_walkers", default=256,
@@ -314,6 +324,6 @@ if __name__ == "__main__":
     np.random.seed(args.seed)
 
     main(args.apogee_id, n_walkers=args.n_walkers, n_steps=args.n_steps,
-         n_burnin=args.n_burnin,
+         mpi=args.mpi, n_burnin=args.n_burnin,
          sampler_name=args.sampler_name,
          overwrite=args.overwrite)

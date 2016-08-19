@@ -261,7 +261,7 @@ def main(apogee_id, n_walkers, n_steps, sampler_name, n_burnin=128,
         g = f.create_group(apogee_id)
 
         g.create_dataset('p0', data=p0)
-        g.create_dataset('chain'], data=sampler.chain)
+        g.create_dataset('chain', data=sampler.chain)
 
         # metadata
         g.attrs['n_walkers'] = n_walkers

@@ -191,6 +191,7 @@ def main(apogee_id, n_walkers, n_steps, sampler_name, n_burnin=128,
     logger.debug("Reading data from Troup catalog and allVisit files...")
     data = allVisit_to_rvdata(target)
     troup_orbit = troup_to_init_orbit(troup, data)
+    n_dim = 7 # HACK: magic number
 
     # first figure is initial guess
     plot_init_orbit(troup_orbit, data, apogee_id)
@@ -199,23 +200,41 @@ def main(apogee_id, n_walkers, n_steps, sampler_name, n_burnin=128,
     model = OrbitModel(data=data, orbit=troup_orbit.copy())
 
     # sample initial conditions for walkers
-    logger.debug("Sampling initial conditions for MCMC walkers...")
-    p0 = emcee.utils.sample_ball(model.get_par_vec(),
-                                 1E-3*model.get_par_vec(),
-                                 size=n_walkers)
-
-    # special treatment for ln_P
-    p0[:,0] = np.random.normal(np.log(model.orbit._P), 0.5, size=p0.shape[0])
-
-    # special treatment for s
-    p0[:,6] = np.abs(np.random.normal(0, 1E-3, size=p0.shape[0]) * u.km/u.s).decompose(usys).value
-
+    logger.debug("Generating initial conditions for MCMC walkers...")
     if sampler_name == 'emcee':
-        sampler = emcee.EnsembleSampler(n_walkers, dim=p0.shape[1],
+        p0 = emcee.utils.sample_ball(model.get_par_vec(),
+                                     1E-3*model.get_par_vec(),
+                                     size=n_walkers)
+
+        # special treatment for ln_P
+        p0[:,0] = np.random.normal(np.log(model.orbit._P), 0.5, size=p0.shape[0])
+
+        # special treatment for s
+        p0[:,6] = np.abs(np.random.normal(0, 1E-3, size=p0.shape[0]) * u.km/u.s).decompose(usys).value
+
+        sampler = emcee.EnsembleSampler(n_walkers, dim=n_dim,
                                         lnpostfn=model, pool=pool)
 
     elif sampler_name == 'kombine':
-        sampler = kombine.Sampler(n_walkers, ndim=p0.shape[1],
+        p0 = np.zeros((n_walkers, n_dim))
+
+        p0[:,0] = np.random.uniform(1., 8., n_walkers)
+
+        _asini = np.random.uniform(-1., 3., n_walkers)
+        _phi0 = np.random.uniform(0, 2*np.pi, n_walkers)
+        p0[:,1] = _asini * np.cos(_phi0)
+        p0[:,2] = _asini * np.sin(_phi0)
+
+        _ecc = np.random.uniform(0, 1, n_walkers)
+        _omega = np.random.uniform(0, 2*np.pi, n_walkers)
+        p0[:,3] = np.sqrt(_ecc) * np.cos(_omega)
+        p0[:,4] = np.sqrt(_ecc) * np.sin(_omega)
+
+        p0[:,5] = (np.random.normal(0., 75., n_walkers) * u.km/u.s).decompose(usys).value
+
+        p0[:,6] = (np.exp(np.random.uniform(-8, 0., n_walkers)) * u.km/u.s).decompose(usys).value
+
+        sampler = kombine.Sampler(n_walkers, ndim=n_dim,
                                   lnpostfn=model, pool=pool)
 
     else:

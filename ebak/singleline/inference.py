@@ -176,14 +176,19 @@ class OrbitModel(object):
     def copy(self):
         return self.__copy__()
 
-    def plot_rv_samples(self, sampler, ax=None, **kwargs):
+    def plot_rv_samples(self, samples, ax=None, **kwargs):
         """
+
+        Parameters
+        ----------
+        samples : array_like
+        ...
         """
         if ax is None:
             fig,ax = plt.subplots(1,1)
 
         style = kwargs.copy()
-        style.setdefault('alpha', 10/sampler.chain.shape[0])
+        style.setdefault('alpha', 10/samples.shape[0])
         style.setdefault('color', '#de2d26')
 
         _tdiff = self.data._t.max() - self.data._t.min()
@@ -192,7 +197,7 @@ class OrbitModel(object):
 
         # plot the last position of the walkers
         _model = self.copy()
-        for p in sampler.chain[:,-1]:
+        for p in samples:
             _model.set_par_from_vec(p)
             _model.orbit.plot(t=t, ax=ax, **style)
 

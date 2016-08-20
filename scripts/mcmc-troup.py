@@ -151,6 +151,7 @@ def plot_mcmc_diagnostics(sampler, p0, model, sampler_name, apogee_id):
         ax.set_xlabel("walker num")
         ax.set_ylabel("acceptance fraction")
 
+    fig.tight_layout()
     fig.savefig(join(PLOT_PATH, "{}-3-accep.png".format(apogee_id)), dpi=256)
 
     # MCMC walker trace
@@ -162,6 +163,7 @@ def plot_mcmc_diagnostics(sampler, p0, model, sampler_name, apogee_id):
         # axes[i].plot(sampler.chain[:,-1,i], marker='.', alpha=0.25, color='k')
 
     axes[i].set_xlim(0, p0.shape[0] + 2)
+    fig.tight_layout()
     fig.savefig(join(PLOT_PATH, "{}-4-walkers.png".format(apogee_id)), dpi=256)
 
 # ---
@@ -220,24 +222,24 @@ def main(apogee_id, index, n_walkers, n_steps, sampler_name, n_burnin=128,
                                         lnpostfn=model, pool=pool)
 
     elif sampler_name == 'kombine':
-        # TODO: add option for Prior-sampeld initial conditions
-        # p0 = np.zeros((n_walkers, n_dim))
+        # TODO: add option for Prior-sampeld initial conditions, don't assume uniform for kombine
+        p0 = np.zeros((n_walkers, n_dim))
 
-        # p0[:,0] = np.random.uniform(1., 8., n_walkers)
+        p0[:,0] = np.random.uniform(1., 8., n_walkers)
 
-        # _asini = np.random.uniform(-1., 3., n_walkers)
-        # _phi0 = np.random.uniform(0, 2*np.pi, n_walkers)
-        # p0[:,1] = _asini * np.cos(_phi0)
-        # p0[:,2] = _asini * np.sin(_phi0)
+        _asini = np.random.uniform(-1., 3., n_walkers)
+        _phi0 = np.random.uniform(0, 2*np.pi, n_walkers)
+        p0[:,1] = _asini * np.cos(_phi0)
+        p0[:,2] = _asini * np.sin(_phi0)
 
-        # _ecc = np.random.uniform(0, 1, n_walkers)
-        # _omega = np.random.uniform(0, 2*np.pi, n_walkers)
-        # p0[:,3] = np.sqrt(_ecc) * np.cos(_omega)
-        # p0[:,4] = np.sqrt(_ecc) * np.sin(_omega)
+        _ecc = np.random.uniform(0, 1, n_walkers)
+        _omega = np.random.uniform(0, 2*np.pi, n_walkers)
+        p0[:,3] = np.sqrt(_ecc) * np.cos(_omega)
+        p0[:,4] = np.sqrt(_ecc) * np.sin(_omega)
 
-        # p0[:,5] = (np.random.normal(0., 75., n_walkers) * u.km/u.s).decompose(usys).value
+        p0[:,5] = (np.random.normal(0., 75., n_walkers) * u.km/u.s).decompose(usys).value
 
-        # p0[:,6] = (np.exp(np.random.uniform(-8, 0., n_walkers)) * u.km/u.s).decompose(usys).value
+        p0[:,6] = (np.exp(np.random.uniform(-8, 0., n_walkers)) * u.km/u.s).decompose(usys).value
 
         sampler = kombine.Sampler(n_walkers, ndim=n_dim,
                                   lnpostfn=model, pool=pool)
@@ -295,8 +297,14 @@ def main(apogee_id, index, n_walkers, n_steps, sampler_name, n_burnin=128,
 
     # plot orbits computed from the samples
     logger.debug("Plotting the MCMC samples...")
+
     fig,ax = plt.subplots(1,1,figsize=(8,6))
-    fig = model.plot_rv_samples(sampler, ax=ax)
+
+    if sampler_name == 'emcee':
+        fig = model.plot_rv_samples(sampler.chain[:,-1], ax=ax)
+    elif sampler_name == 'kombine':
+        fig = model.plot_rv_samples(sampler.chain[-1], ax=ax)
+
     _ = model.data.plot(ax=ax)
     fig.tight_layout()
     fig.savefig(join(PLOT_PATH, "{}-1-rv-curves.png".format(apogee_id)), dpi=256)
@@ -308,6 +316,7 @@ def main(apogee_id, index, n_walkers, n_steps, sampler_name, n_burnin=128,
                   troup_orbit.ecc, troup_orbit.omega.to(u.degree).value,
                   troup_orbit.t0.mjd, -troup_orbit.v0.to(u.km/u.s).value, 0.]
     fig = corner.corner(plot_pars, labels=model.plot_labels, truths=troup_vals)
+    fig.tight_layout()
     fig.savefig(join(PLOT_PATH, "{}-2-corner.png".format(apogee_id)), dpi=256)
     logger.debug("done!")
 

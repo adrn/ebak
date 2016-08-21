@@ -453,3 +453,7 @@ if __name__ == "__main__":
              pool=pool, n_burnin=args.n_burnin,
              sampler_name=args.sampler_name,
              overwrite=args.overwrite)
+    try:
+        pool.stop()
+    except:
+        pass

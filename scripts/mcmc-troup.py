@@ -173,7 +173,8 @@ def main(apogee_id, index, n_walkers, n_steps, sampler_name, n_burnin=128,
          mpi=False, seed=42, overwrite=False):
 
     # MPI shite
-    pool = get_pool(mpi=mpi)
+    pool = get_pool(mpi=mpi, loadbalance=True)
+    # need load-balancing - see: https://groups.google.com/forum/#!msg/mpi4py/OJG5eZ2f-Pg/EnhN06Ozg2oJ
 
     # read in Troup catalog
     _troup = np.genfromtxt(TROUP_DATA_PATH, delimiter=",",

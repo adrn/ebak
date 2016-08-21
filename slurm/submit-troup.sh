@@ -5,18 +5,22 @@
 #SBATCH -n 128                   # total number of mpi tasks requested
 #SBATCH -p normal          # queue (partition) -- normal, development, etc.
 #SBATCH -A TG-AST150023         # Project ID
-#SBATCH -t 00:30:00             # run time (hh:mm:ss) - 1.5 hours
+#SBATCH -t 12:00:00             # run time (hh:mm:ss) - 1.5 hours
 #SBATCH --mail-user=amp2217@columbia.edu
 #SBATCH --mail-type=begin       # email me when the job starts
 #SBATCH --mail-type=end         # email me when the job finishes
 
-export NBURN=256
+export SAMPLER='kombine'
+export NBURN=128 # Irrelevant for Kombine
 export NSTEPS=4096
 export NWALKERS=512
-export SAMPLER='kombine'
 
 cd $WORK/projects/ebak/scripts/
 
 source activate ebak
 
-ibrun python mcmc-troup.py -v -s $SAMPLER -o --n-steps=$NSTEPS --n-burnin=$NBURN --n-walkers=$NWALKERS --index=$INDEX --mpi
+NTROUP=382
+for ((i=0; i<NTROUP; i++)); do
+    ibrun python mcmc-troup.py -v -s $SAMPLER -o --n-steps=$NSTEPS --n-burnin=$NBURN --n-walkers=$NWALKERS --index=$i --mpi
+    wait
+done

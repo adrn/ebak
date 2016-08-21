@@ -444,7 +444,7 @@ if __name__ == "__main__":
 
     # np.random.seed(args.seed)
 
-    pool = Pool(MPI.COMM_WORLD)
+    pool = MPIPool(MPI.COMM_WORLD)
 
     pool.start()
 

@@ -34,3 +34,5 @@ distribute-*.tar.gz
 notebooks/*
 data/*.fits
 plots/*
+slurm/*.e*
+slurm/*.o*

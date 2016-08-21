@@ -235,8 +235,8 @@ def plot_mcmc_diagnostics(sampler, p0, model, sampler_name, apogee_id):
 
 # ---
 
-def main(apogee_id, index, n_walkers, n_steps, sampler_name, n_burnin=128,
-         mpi=False, seed=42, overwrite=False):
+def main(apogee_id, index, n_walkers, n_steps, sampler_name, pool, n_burnin=128,
+         seed=42, overwrite=False):
 
     # MPI shite
     # pool = get_pool(mpi=mpi, loadbalance=True)

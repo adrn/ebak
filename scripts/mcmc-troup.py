@@ -257,11 +257,13 @@ def main(apogee_id, index, n_walkers, n_steps, sampler_name, n_burnin=128,
     if n_burnin > 0:
         logger.debug("Burning in the MCMC sampler for {} steps...".format(n_steps))
 
+        _t1 = time.time()
         if sampler_name == 'kombine':
             sampler.burnin(p0)
         else:
             pos,_,_ = sampler.run_mcmc(p0, N=n_steps)
             sampler.reset()
+        logger.debug("done with burn-in after {} seconds.".format(time.time()-_t1))
 
     else:
         pos = p0

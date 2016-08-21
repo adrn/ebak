@@ -276,6 +276,10 @@ def main(apogee_id, index, n_walkers, n_steps, sampler_name, n_burnin=128,
     pool.close()
     logger.info("done sampling after {} seconds.".format(time.time()-_t1))
 
+    if sampler_name == 'kombine':
+        # HACK: kombine uses different axes order
+        chain = np.swapaxes(sampler.chain, 0, 1)
+
     # output the chain and metadata to HDF5 file
     with h5py.File(OUTPUT_FILENAME, 'a') as f: # read/write if exists, create otherwise
         if apogee_id in f and overwrite:
@@ -288,7 +292,7 @@ def main(apogee_id, index, n_walkers, n_steps, sampler_name, n_burnin=128,
         g = f.create_group(apogee_id)
 
         g.create_dataset('p0', data=p0)
-        g.create_dataset('chain', data=sampler.chain)
+        g.create_dataset('chain', data=chain)
 
         # metadata
         g.attrs['n_walkers'] = n_walkers
@@ -300,17 +304,13 @@ def main(apogee_id, index, n_walkers, n_steps, sampler_name, n_burnin=128,
 
     fig,ax = plt.subplots(1,1,figsize=(8,6))
 
-    if sampler_name == 'emcee':
-        fig = model.plot_rv_samples(sampler.chain[:,-1], ax=ax)
-    elif sampler_name == 'kombine':
-        fig = model.plot_rv_samples(sampler.chain[-1], ax=ax)
-
+    fig = model.plot_rv_samples(chain[:,-1], ax=ax)
     _ = model.data.plot(ax=ax)
     fig.tight_layout()
     fig.savefig(join(PLOT_PATH, "{}-1-rv-curves.png".format(apogee_id)), dpi=256)
 
     # make a corner plot
-    flatchain = np.vstack(sampler.chain[:,-256:])
+    flatchain = np.vstack(chain[:,-256:])
     plot_pars = model.vec_to_plot_pars(flatchain)
     troup_vals = [np.log(troup_orbit.P.to(u.day).value), troup_orbit.mf.value,
                   troup_orbit.ecc, troup_orbit.omega.to(u.degree).value,

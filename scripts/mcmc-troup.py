@@ -15,6 +15,7 @@ __author__ = "adrn <adrn@astro.columbia.edu>"
 import os
 from os.path import abspath, join, split, exists
 import time
+import sys
 
 # Third-party
 from astropy import log as logger
@@ -279,6 +280,8 @@ def main(apogee_id, index, n_walkers, n_steps, sampler_name, n_burnin=128,
     if sampler_name == 'kombine':
         # HACK: kombine uses different axes order
         chain = np.swapaxes(sampler.chain, 0, 1)
+    else:
+        chain = sampler.chain
 
     # output the chain and metadata to HDF5 file
     with h5py.File(OUTPUT_FILENAME, 'a') as f: # read/write if exists, create otherwise
@@ -322,6 +325,8 @@ def main(apogee_id, index, n_walkers, n_steps, sampler_name, n_burnin=128,
 
     # make MCMC diagnostic plots as well (e.g., acceptance fraction, chain traces)
     plot_mcmc_diagnostics(sampler, p0, model, sampler_name, apogee_id)
+
+    sys.exit(0)
 
 if __name__ == "__main__":
     from argparse import ArgumentParser

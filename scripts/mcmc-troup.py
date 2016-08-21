@@ -271,9 +271,9 @@ def main(apogee_id, index, n_walkers, n_steps, sampler_name, n_burnin=128,
 
     logger.info("Running MCMC sampler for {} steps...".format(n_steps))
     if sampler_name == 'kombine':
-        pos,_,_ = sampler.run_mcmc(n_steps)
+        sampler.run_mcmc(n_steps)
     else:
-        pos,_,_ = sampler.run_mcmc(pos, N=n_steps)
+        sampler.run_mcmc(pos, N=n_steps)
 
     pool.close()
     logger.info("done sampling after {} seconds.".format(time.time()-_t1))

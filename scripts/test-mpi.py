@@ -5,6 +5,7 @@ import os
 from os.path import abspath, join, split, exists
 import time
 import sys
+import pickle
 
 # Third-party
 from astropy import log as logger
@@ -14,9 +15,11 @@ import astropy.time as atime
 import astropy.coordinates as coord
 import astropy.units as u
 import h5py
+from scipy.stats import multivariate_normal as mvn
 
 import emcee
 import kombine
+from kombine.sampler import _GetLnProbWrapper
 import matplotlib.pyplot as plt
 import numpy as np
 plt.style.use('apw-notebook')
@@ -125,7 +128,12 @@ def main(option, n_walkers):
 
         p0 = np.random.uniform(-10, 10, size=(n_walkers, n_dim))
         p, post, q = sampler.burnin(p0)
-        sampler.run_mcmc(16)
+        
+        with open('kde-{}.pickle'.format(option), 'wb') as f:
+            pickle.dump(sampler._kde, f)
+        with open('lnprob-{}.pickle'.format(option), 'wb') as f:
+            derp = _GetLnProbWrapper(sampler._get_lnpost, sampler._kde, *sampler._lnpost_args)
+            pickle.dump(derp, f)
 
         pool.close()
 
@@ -147,7 +155,12 @@ def main(option, n_walkers):
 
             p0 = np.random.uniform(-10, 10, size=(n_walkers, n_dim))
             p, post, q = sampler.burnin(p0)
-            sampler.run_mcmc(16)
+
+            with open('kde-{}.pickle'.format(option), 'wb') as f:
+                pickle.dump(sampler._kde, f)
+            with open('lnprob-{}.pickle'.format(option), 'wb') as f:
+                derp = _GetLnProbWrapper(sampler._get_lnpost, sampler._kde, *sampler._lnpost_args)
+                pickle.dump(derp, f)
 
         pool.stop()
 

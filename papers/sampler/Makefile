@@ -1,7 +1,7 @@
 LATEX       = pdflatex
 CHECK_RERUN = grep "Rerun to get" $*.log
 
-all: method.pdf
+all: sampler.pdf
 
 %.pdf: %.tex
 	${LATEX} $<

@@ -9,11 +9,40 @@
 
 \begin{document}
 
-\title{A custom Monte Carlo sampler for binary-star and exoplanet radial velocity data}
-\author{APW, DWH, others}
+\title{A custom Monte Carlo sampler
+  for binary-star and exoplanet radial velocity data}
+\author{APW, DWH, DFM, others}
 
 \begin{abstract}
-Dude.
+% Context
+Given sparse radial-velocity measurements of a star, there are often
+many qualitatively different stellar or exoplanet companion orbit
+models that are consistent with the data.
+The consequent multimodality of the likelihood function leads to
+extremely challenging search, optimization, and MCMC posterior
+sampling in the space of orbital parameters.
+% Aims
+Here we create a custom-build Monte Carlo sampler that can produce a
+posterior sampling for orbital parameters given even small numbers of
+noisy radial-valocity measurements (and hence very complex likelihood
+function).
+The goal is to obtain provably correct samplings in the space of
+orbital parameters.
+% Methods
+We capitalize on the similarity between orbit fitting and linear
+sinusoid fitting, where we can---at any given orbital
+period---generate a perfect sampling because of the problem structure.
+We transform the perfect samplings in the linear problem into a
+perfect sampling in the real orbital problem using importance
+sampling.
+% Results
+We find that we can quickly produce correct samplings in orbital
+parameters for data sets that include as few as three noisy time
+points.
+Although the method produces correct samplings by construction, the
+method becomes inefficient (at the importance sampling stage) when the
+eccentricity becomes large, because in this case the linear and real
+problems diverge substantially.
 \end{abstract}
 
 \keywords{

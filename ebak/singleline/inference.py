@@ -65,9 +65,9 @@ class OrbitModel(object):
 
         # Mass function: log-normal centered on ln(3)
         # - Numbers chosen from Troup et al. (2016)
-        m_f = self.orbit._m_f
-        lnp += -0.5 * (np.log(m_f) - (-10.))**2 / (5.)**2
-        if m_f < 0:
+        mf = self.orbit._mf
+        lnp += -0.5 * (np.log(mf) - (-10.))**2 / (5.)**2
+        if mf < 0:
             return -np.inf
 
         # Orbital period: assumes sampler is stepping in log(P)
@@ -143,7 +143,7 @@ class OrbitModel(object):
             orbit = model.orbit
 
             return np.array([np.log(orbit.P.to(u.day).value),
-                             orbit.m_f.to(u.Msun).value,
+                             orbit.mf.to(u.Msun).value,
                              orbit.ecc,
                              orbit.omega.to(u.degree).value,
                              orbit.t0.mjd,
@@ -157,7 +157,7 @@ class OrbitModel(object):
                 model.set_par_from_vec(p[i])
                 orbit = model.orbit
                 all_pars.append([np.log(orbit.P.to(u.day).value),
-                                 orbit.m_f.to(u.Msun).value,
+                                 orbit.mf.to(u.Msun).value,
                                  orbit.ecc,
                                  orbit.omega.to(u.degree).value,
                                  orbit.t0.mjd,
@@ -176,14 +176,19 @@ class OrbitModel(object):
     def copy(self):
         return self.__copy__()
 
-    def plot_rv_samples(self, sampler, ax=None, **kwargs):
+    def plot_rv_samples(self, samples, ax=None, **kwargs):
         """
+
+        Parameters
+        ----------
+        samples : array_like
+        ...
         """
         if ax is None:
             fig,ax = plt.subplots(1,1)
 
         style = kwargs.copy()
-        style.setdefault('alpha', 10/sampler.chain.shape[0])
+        style.setdefault('alpha', 10/samples.shape[0])
         style.setdefault('color', '#de2d26')
 
         _tdiff = self.data._t.max() - self.data._t.min()
@@ -192,7 +197,7 @@ class OrbitModel(object):
 
         # plot the last position of the walkers
         _model = self.copy()
-        for p in sampler.chain[:,-1]:
+        for p in samples:
             _model.set_par_from_vec(p)
             _model.orbit.plot(t=t, ax=ax, **style)
 

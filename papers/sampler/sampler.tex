@@ -53,6 +53,82 @@ problems diverge substantially.
   ---
 }
 
-Hello World.
+\section{Introduction}
+
+Precise radial-velocity measurements of stars have transformed
+astrophysics in the last decades:
+They have permitted the discovery of the first planets around other stars,
+including especially the unanticipated but common hot jupiters,
+and been used to discover or confirm hundreds
+(perhaps thousands?) of planets.
+Radial velocity measurements have also been used to find substellar,
+degenerate, and black-hole companions to more normal stars, and hold
+the promise of delivering the full population statistics for binary
+(and trinary) star systems.
+
+With many new stellar spectroscopic surveys operating or under
+construction, we expect to have good quality spectra for millions
+of stars in the next few years.
+Most of these surveys have at least some targets---and many have many
+targets---that get observed multiple times.
+These surveys can (as an auxilliary or primary goal of their observing
+strategies) generate discoveries of planetary, substellar, and stellar
+companions.
+These discoveries, in turn, will feed population inferences, follow-up
+programs, and projects to refine precise stellar models.
+
+However, when radial-velocity observations are not designed with
+unambiguous detection and discovery in mind, usually there are
+multiple possible binary-star models that are consistent with any
+small number of radial-velocity measurements that show stellar
+acceleration.
+That is, a small number of (even very good) radial velocity
+measurements will lead to posterior beliefs about companion orbits and
+masses that put substantial plausibility onto multiple qualitatively
+different solutions, or (in other words) create a likelihood function
+that is highly multi-model in the relevant parameter spaces.
+There are currently no safe methods known for exploring these highly
+multimodal functions and delivering correct posterior samplings and
+reliable probabilistic statements about detection and
+characterization.
+
+Here we make an attempt at correcting these problems.
+Our approach is to build custom posterior sampling methods that
+capitalize on the structure of the binary-star (or star--exoplanet)
+kinematics to create provably---or highly probably---correct
+samplings.
+
+The structure of the paper is as follows:
+We state clearly our assumptions, and demonstrate that we have a
+method that is correct under those assumptions.
+We perform experiments with the method to understand its properties
+and limitations.
+We finish by discussing the value of the method, and the changes we
+would have to make if we weakened our assumptions, or if we don't
+weaken our assumptions but they indeed prove to be far from correct.
+
+\section{Assumptions and method}
+
+In order to set up a well-posed problem and build a path to a
+definite solution, we make a set of non-trivial assumptions about the
+stellar systems we are observing.
+\begin{enumerate}
+\item Gaussianity and independence with known variances.
+\item Only zero or one component, single-line, unconaminated stellar spectrum.
+\item Kepler problem is an accurate description.
+\item Priors.
+\end{enumerate}
+
+We have three options at this point: (1) just run the fucking MCMC and make sure it converges, (2) do the solvable problem (single siusoid) and important sample down to the correct problem (the full Kepler problem), or (3) Monte Carlo sample the nonlinear parameters after marginalizing out the linear parameters.
+
+\section{Experiments and results}
+
+\section{Discussion}
+
+\acknowledgements
+It is a pleasure to thank
+  Hans-Walter Rix (MPIA)
+for valuable discussions.
+DWH thanks [many things].
 
 \end{document}

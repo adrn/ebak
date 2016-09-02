@@ -88,7 +88,6 @@ def _getq(f, key):
         unit = u.Unit(f[key].attrs['unit'])
     else:
         unit = 1.
-    print(key, unit)
     return f[key][:] * unit
 
 def main(n_procs=0, mpi=False, seed=42, overwrite=False):
@@ -189,9 +188,9 @@ def main(n_procs=0, mpi=False, seed=42, overwrite=False):
             line_alpha = 0.1 + Q / (n_lines + Q)
 
             ax_lnP_e.plot(np.log(P.to(u.day).value), ecc,
-                          marker='.', color='k', alpha=pt_alpha, ms=8)
+                          marker='.', color='k', alpha=pt_alpha, ms=8, ls='none')
             ax_lnP_asini.plot(np.log(P.to(u.day).value), np.log(asini.to(u.au).value),
-                              marker='.', color='k', alpha=pt_alpha, ms=8)
+                              marker='.', color='k', alpha=pt_alpha, ms=8, ls='none')
 
             for i in range(len(P)):
                 orbit = SimulatedRVOrbit(P=P[i], a_sin_i=asini[i], ecc=ecc[i],
@@ -206,7 +205,7 @@ def main(n_procs=0, mpi=False, seed=42, overwrite=False):
         data.plot(ax=ax_rv)
         ax_rv.set_xlim(t_grid.min()-25, t_grid.max()+25)
         _rv = all_data.rv.to(u.km/u.s).value
-        ax_rv.set_ylim(np.median(_rv)-10, np.median(_rv)+10)
+        ax_rv.set_ylim(np.median(_rv)-20, np.median(_rv)+20)
         ax_rv.set_xlabel('MJD')
         ax_rv.set_ylabel('RV [km s$^{-1}$]')
 

@@ -27,6 +27,8 @@
 \newcommand{\project}[1]{\textsl{#1}}
 \newcommand{\acronym}[1]{{\small{#1}}}
 \newcommand{\apogee}{\project{\acronym{APOGEE}}}
+\newcommand{\thecolander}{\project{The~Colander}}
+\newcommand{\emcee}{\project{emcee}}
 \newcommand{\dr}{\acronym{DR13}}
 
 % define macros for math
@@ -35,7 +37,7 @@
 
 \begin{document}
 
-\title{A custom Monte Carlo sampler
+\title{\thecolander: A custom Monte Carlo sampler \\
   for binary-star and exoplanet radial velocity data}
 \author{Adrian~M.~Price-Whelan\altaffilmark{\pu,\adrn},
         David~W.~Hogg\altaffilmark{\ccpp,\mpia},
@@ -213,15 +215,41 @@ Fundamentally, our method is to perform \emph{simple Monte Carlo} in
 the non-linear parameters, and analytically marginalize out the linear
 parameters.
 
+Our method will capitalize on the following aspects of the problem
+structure:
+\begin{itemize}
+\item There are linear and non-linear parameters, and we can treat
+  them differently.
+\item There is a finite, time-sampling-imposed minimum size or
+  resolution---in the period direction---of any features in the
+  likelihood function.
+\end{itemize}
+
 What is simple monte carlo?
 
 What are our explicit priors?
 
-What do we do after SMC?
+What do we do after SMC? Resampling or \emcee.
 
 \section{Experiments and results}
 
+Introduce the \apogee\ data, and our poster-child.
+
+Show results as a function of $N$.
+
+Show switch-over from SMC to \emcee.
+
 \section{Discussion}
+
+What did we find?
+
+What can this system be used for? Discovery, characterization, and
+hierarchial inference.
+
+Of the assumptions, probably the most severe is the Gaussian noise
+with known variance. \textbf{This is wrong, very wrong!} Ideas about
+ameliorating this, and what those options would cost us. Advice for
+those using the system despite these issues.
 
 \acknowledgements
 It is a pleasure to thank

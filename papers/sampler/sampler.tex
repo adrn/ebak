@@ -7,6 +7,21 @@
 % style notes
 % -----------
 
+% fix aastex
+\setlength{\parindent}{1.4em}
+\setlength{\parskip}{0ex}
+\linespread{1.15} % close to 10/13 spacing in ``manuscript''
+\makeatletter % you know you are living your life wrong when you need to do this
+\def\revtex@pageid{%
+ \xdef\@thefnmark{\null}%
+ \@footnotetext{%
+  This \revtex@genre\space was prepared with the
+  \revtex@org\space \LaTeX\ macros v\revtex@ver, with modifications by David~W.~Hogg.%
+ }%
+}%
+\makeatother
+\sloppy\sloppypar\frenchspacing
+
 % define macros for text
 \newcommand{\project}[1]{\textsl{#1}}
 \newcommand{\acronym}[1]{{\small{#1}}}
@@ -17,7 +32,7 @@
 \newcommand{\meterspersecond}{\mathrm{m\,s^{-1}}}
 \newcommand{\asini}{a\,\sin i}
 
-\begin{document}\sloppy\sloppypar\frenchspacing
+\begin{document}
 
 \title{A custom Monte Carlo sampler
   for binary-star and exoplanet radial velocity data}

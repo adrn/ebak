@@ -5,6 +5,7 @@ TODO:
 - Write out chain to an HDF5 file
 - Preserve initial orbit guess
 - If eccentric_anomaly_from_mean_anomaly() raises a warning, return -np.inf?
+- Use: https://github.com/dfm/peerless/blob/master/peerless/pool.py for MPI
 """
 
 from __future__ import division, print_function

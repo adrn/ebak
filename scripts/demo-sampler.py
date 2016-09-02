@@ -95,7 +95,7 @@ def _getq(f, key):
 
 def main(n_procs=0, mpi=False, seed=42, overwrite=False):
 
-    output_filename = join(CACHE_PATH, "ahw2016-magic.h5")
+    output_filename = join(CACHE_PATH, "{}.h5".format(APOGEE_ID))
 
     # MPI shite
     pool = get_pool(mpi=mpi, threads=n_procs)

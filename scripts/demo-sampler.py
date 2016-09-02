@@ -15,6 +15,7 @@ import h5py
 
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
+# from cycler import cycler
 import numpy as np
 import corner
 from gala.util import get_pool
@@ -39,11 +40,12 @@ for PATH in [PLOT_PATH, CACHE_PATH]:
         os.mkdir(PATH)
 
 APOGEE_ID = "2M03080601+7950502"
-# n_samples = 2**19
-n_samples = 2**8 # HACK: temporary
+n_samples = 2**18
 P_min = 16. # day
 P_max = 8192. # day
 jitter = 0.5*u.km/u.s # TODO: set this same as Troup
+
+# _palette = ['r', 'g', 'b']
 
 def marginal_ll_worker(task):
     nl_p, data = task
@@ -163,13 +165,15 @@ def main(n_procs=0, mpi=False, seed=42, overwrite=False):
 
         # --------------------------------------------------------------------
         # make some plots, yo
-        MAX_N_LINES = 256
+        MAX_N_LINES = 128
 
         # plot samples
         fig = plt.figure(figsize=(6,6))
         gs = gridspec.GridSpec(2, 2)
 
         ax_rv = plt.subplot(gs[0,:])
+        # ax_rv.set_prop_cycle(cycler('color', _palette))
+
         ax_lnP_e = plt.subplot(gs[1,0])
         ax_lnP_asini = plt.subplot(gs[1,1])
 
@@ -186,9 +190,9 @@ def main(n_procs=0, mpi=False, seed=42, overwrite=False):
             n_lines = min(len(P), MAX_N_LINES)
 
             n_pts = len(P)
-            pt_alpha = min(0.95, max(0.1, 0.95 + 0.85*(np.log(2)-np.log(n_pts))/(np.log(1024)-np.log(2))))
-            Q = 3. # HACK
-            line_alpha = 0.1 + Q / (n_lines + Q)
+            pt_alpha = min(0.9, max(0.1, 0.8 + 0.9*(np.log(2)-np.log(n_pts))/(np.log(1024)-np.log(2))))
+            Q = 4. # HACK
+            line_alpha = 0.05 + Q / (n_lines + Q)
 
             ax_lnP_e.plot(np.log(P.to(u.day).value), ecc,
                           marker='.', color='k', alpha=pt_alpha, ms=5, ls='none')

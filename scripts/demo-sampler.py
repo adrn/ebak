@@ -39,7 +39,6 @@ for PATH in [PLOT_PATH, CACHE_PATH]:
     if not exists(PATH):
         os.mkdir(PATH)
 
-n_samples = 2**20
 P_min = 16. # day
 P_max = 8192. # day
 jitter = 0.5*u.km/u.s # TODO: set this same as Troup
@@ -60,7 +59,7 @@ def get_good_samples(nonlinear_p, data, pool):
     results = pool.map(marginal_ll_worker, tasks)
     marg_ll = np.squeeze(results)
 
-    uu = np.random.uniform(size=n_samples)
+    uu = np.random.uniform(size=len(nonlinear_p))
     good_samples_bool = uu < np.exp(marg_ll - marg_ll.max())
     good_samples = nonlinear_p[np.where(good_samples_bool)]
     n_good = len(good_samples)
@@ -96,7 +95,7 @@ def _getq(f, key):
         unit = 1.
     return f[key][:] * unit
 
-def main(APOGEE_ID, pool, seed=42, overwrite=False):
+def main(APOGEE_ID, pool, n_samples=1, seed=42, overwrite=False):
 
     output_filename = join(CACHE_PATH, "{}.h5".format(APOGEE_ID))
 
@@ -263,6 +262,8 @@ if __name__ == "__main__":
 
     parser.add_argument("--id", dest="apogee_id", default=None, required=True,
                         type=str, help="APOGEE ID")
+    parser.add_argument("-n", "--num-samples", dest="n_samples", default=2**20,
+                        type=str, help="Number of prior samples.")
 
     args = parser.parse_args()
 
@@ -285,6 +286,11 @@ if __name__ == "__main__":
         logger.info("Running serial")
         _kwargs = {'pool': 'SerialPool'}
 
+    try:
+        n_samples = int(args.n_samples)
+    except:
+        n_samples = int(eval(args.n_samples)) # LOL what's security?
+
     with Pool(**_kwargs) as pool:
-        main(APOGEE_ID=args.apogee_id, pool=pool,
+        main(APOGEE_ID=args.apogee_id, n_samples=n_samples, pool=pool,
              seed=args.seed, overwrite=args.overwrite)

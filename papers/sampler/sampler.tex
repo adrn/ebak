@@ -9,8 +9,8 @@
 
 % fix aastex
 \setlength{\parindent}{1.4em}
-\setlength{\parskip}{0ex}
 \linespread{1.15} % close to 10/13 spacing in ``manuscript''
+\setlength{\parskip}{0ex}
 \makeatletter % you know you are living your life wrong when you need to do this
 \def\revtex@pageid{%
  \xdef\@thefnmark{\null}%
@@ -19,6 +19,7 @@
   \revtex@org\space \LaTeX\ macros v\revtex@ver, with modifications by David~W.~Hogg.%
  }%
 }%
+\def\abstractname{Abstract}%
 \makeatother
 \sloppy\sloppypar\frenchspacing
 
@@ -80,20 +81,12 @@ function).
 The goal is to obtain provably correct samplings in the space of
 orbital parameters.
 % Methods
-We capitalize on the similarity between orbit fitting and linear
-sinusoid fitting, where we can---at any given orbital
-period---generate a perfect sampling because of the problem structure.
-We transform the perfect samplings in the linear problem into a
-perfect sampling in the real orbital problem using importance
-sampling.
+[HOGG FIX ME]
 % Results
-We find that we can quickly produce correct samplings in orbital
+We find that we can produce correct samplings in orbital
 parameters for data sets that include as few as three noisy time
 points.
-Although the method produces correct samplings by construction, the
-method becomes inefficient (at the importance sampling stage) when the
-eccentricity becomes large, because in this case the linear and real
-problems diverge substantially.
+[HOGG BUT....]
 \end{abstract}
 
 \keywords{

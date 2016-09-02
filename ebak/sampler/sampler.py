@@ -57,7 +57,7 @@ def tensor_vector_scalar(nonlinear_p, data):
         Chi-squared value.
 
     """
-    A = design_matrix_kepler(data._t, nl_p)
+    A = design_matrix(data._t, nl_p)
     ATCinv = (A.T * data._ivar[None])
     ATA = ATCinv.dot(A)
 

@@ -147,6 +147,10 @@ def main(APOGEE_ID, pool, n_samples=1, seed=42, overwrite=False):
 
         if not skip_compute:
             nl_samples = get_good_samples(nl_p, data, pool) # TODO: save?
+            if len(nl_samples) == 0:
+                logger.error("Failed to find any good samples!")
+                pool.close()
+                sys.exit(1)
             orbital_params = samples_to_orbital_params(nl_samples, data, pool)
 
             # save the orbital parameters out to a cache file

@@ -48,8 +48,8 @@ jitter = 0.5*u.km/u.s # TODO: set this same as Troup
 
 def marginal_ll_worker(task):
     nl_p, data = task
-    ATA,p,chi2 = tensor_vector_scalar(nl_p, data)
     try:
+        ATA,p,chi2 = tensor_vector_scalar(nl_p, data)
         ll = marginal_ln_likelihood(ATA, chi2)
     except:
         ll = np.nan

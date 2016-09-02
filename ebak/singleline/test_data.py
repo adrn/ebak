@@ -2,6 +2,9 @@ from __future__ import division, print_function
 
 __author__ = "adrn <adrn@astro.columbia.edu>"
 
+# Standard library
+from os.path import exists, join
+
 # Third-party
 import astropy.time as atime
 import astropy.units as u
@@ -44,3 +47,16 @@ def test_rvdata():
     data1.plot()
     data1.plot(color='r')
     data1.plot(ax=plt.gca())
+
+    # try classmethod
+    _basepath = '/Users/adrian/projects/ebak'
+    if exists(_basepath):
+        print("running classmethod test")
+
+        apogee_id = "2M03080601+7950502"
+        data = RVData.from_apogee(join(_basepath, 'data', 'allVisit-l30e.2.fits'),
+                                  apogee_id=apogee_id)
+
+        from astropy.io import fits
+        d = fits.getdata(join(_basepath, 'data', 'allVisit-l30e.2.fits'), 1)
+        data = RVData.from_apogee(d[d['APOGEE_ID'].astype(str) == apogee_id])

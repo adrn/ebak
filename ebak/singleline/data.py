@@ -3,10 +3,13 @@ from __future__ import division, print_function
 __author__ = "adrn <adrn@astro.columbia.edu>"
 
 # Third-party
+from astropy.io import fits
+from astropy.utils.data import get_pkg_data_filename
 import astropy.time as at
 import astropy.units as u
 import matplotlib.pyplot as plt
 import numpy as np
+import six
 
 # Project
 from ..units import usys
@@ -90,3 +93,27 @@ class RVData(object):
     def __len__(self):
         return len(self._t)
 
+    @classmethod
+    def from_apogee(cls, path_or_data, apogee_id=None):
+        """
+        Parameters
+        ----------
+        apogee_id : str
+            The APOGEE ID of the desired target, e.g., 2M03080601+7950502.
+        path_or_data : str, numpy.ndarray
+            Either a string path to the location of the APOGEE allVisit
+            FITS file, or a selection of rows from the allVisit file.
+        """
+
+        if isinstance(path_or_data, six.string_types):
+            _allvisit = fits.getdata(path_or_data, 1)
+            target = _allvisit[_allvisit['APOGEE_ID'].astype(str) == apogee_id]
+        else:
+            target = path_or_data
+
+        rv = np.array(target['VHELIO']) * u.km/u.s
+        ivar = 1 / (np.array(target['VRELERR'])**2 * (u.km/u.s)**2)
+        t = at.Time(np.array(target['JD']), format='jd', scale='tcb')
+
+        idx = np.isfinite(rv.value) & np.isfinite(t.value) & np.isfinite(ivar.value)
+        return cls(t[idx], rv[idx], ivar[idx])

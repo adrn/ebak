@@ -88,7 +88,7 @@ def period_grid(data, P_min=1, P_max=1E4, resolution=2):
 
     return P_grid, dP_grid
 
-def tensor_vector_scalar(P, data):
+def tensor_vector_scalar_sinusoid(P, data):
     A = design_matrix(data._t, P)
     ATCinv = (A.T * data._ivar[None])
     ATA = ATCinv.dot(A)

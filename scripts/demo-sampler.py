@@ -92,12 +92,12 @@ def _getq(f, key):
         unit = 1.
     return f[key][:] * unit
 
-def main(APOGEE_ID, n_procs=0, mpi=False, seed=42, overwrite=False):
+def main(APOGEE_ID, pool, seed=42, overwrite=False):
 
     output_filename = join(CACHE_PATH, "{}.h5".format(APOGEE_ID))
 
     # MPI shite
-    pool = get_pool(mpi=mpi, threads=n_procs)
+    # pool = get_pool(mpi=mpi, threads=n_procs)
     # need load-balancing - see: https://groups.google.com/forum/#!msg/mpi4py/OJG5eZ2f-Pg/EnhN06Ozg2oJ
 
     # load data from APOGEE data
@@ -238,6 +238,7 @@ def main(APOGEE_ID, n_procs=0, mpi=False, seed=42, overwrite=False):
 if __name__ == "__main__":
     from argparse import ArgumentParser
     import logging
+    from ebak.pool import Pool
 
     # Define parser object
     parser = ArgumentParser(description="")
@@ -270,6 +271,16 @@ if __name__ == "__main__":
         logger.setLevel(logging.INFO)
 
     np.random.seed(args.seed)
+    if args.mpi:
+        logger.info("Running with MPI")
+        _kwargs = {'pool': 'MPIPool'}
+    elif args.n_procs != 0:
+        logger.info("Running with multiprocessing on {} cores".format(args.n_procs))
+        _kwargs = {'pool': 'MultiPool', 'processes': args.n_procs}
+    else:
+        logger.info("Running serial")
+        _kwargs = {'pool': 'SerialPool'}
 
-    main(APOGEE_ID=args.apogee_id, n_procs=args.n_procs,
-         mpi=args.mpi, seed=args.seed, overwrite=args.overwrite)
+    with Pool(**_kwargs) as pool:
+        main(APOGEE_ID=args.apogee_id, pool=pool,
+             seed=args.seed, overwrite=args.overwrite)

@@ -81,12 +81,25 @@ function).
 The goal is to obtain provably correct samplings in the space of
 orbital parameters.
 % Methods
-[HOGG FIX ME]
+We build a variant of simple Monte Carlo sampling, in which we densely
+sample the non-linear orbital parameters, and perform rejection
+sampling using a marginalized likelihood, marginalizing out the linear
+orbital parameters.
+In practice and generically, the sampling obtained by the simple Monte
+Carlo is---in the case of sparse or uninformative data---substantial
+and multimodal, or else---in the case of informative
+data---insubstantial but unimodal.
+In the unimodal case, we follow the simple Monte Carlo with standard
+Markov Chain Monte Carlo to make the sampling more substantial.
 % Results
-We find that we can produce correct samplings in orbital
-parameters for data sets that include as few as three noisy time
+The method produces correct samplings in orbital
+parameters for (good) data sets that include as few as three noisy time
 points.
-[HOGG BUT....]
+We give some examples that show how the posterior probability depends
+extremely strongly on the number and time coverage of the
+observations.
+We discuss extensions to the method that could handle issues with the
+noise model or outliers.
 \end{abstract}
 
 \keywords{

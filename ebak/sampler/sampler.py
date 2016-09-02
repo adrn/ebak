@@ -2,55 +2,94 @@
 import numpy as np
 from scipy.interpolate import interp1d
 
-__all__ = ['design_matrix', 'sinusoid_model', 'period_grid',
-           'tensor_vector_scalar', 'marginal_ln_likelihood',
-           'sample_posterior']
+from ..util import find_t0
 
-def design_matrix(t, P, n_terms=1):
+__all__ = ['design_matrix', 'tensor_vector_scalar', 'marginal_ln_likelihood',
+           'period_grid']
+
+def design_matrix(nonlinear_p, t):
     """
 
     Parameters
     ----------
+    nonlinear_p : array_like
+        Array of non-linear parameter values: P (period),
+        phi0 (phase at pericenter), ecc (eccentricity),
+        omega (argument of perihelion).
     t : array_like [day]
         Array of times in days.
-    P : numeric [day]
-        Value of the period in days.
-    n_terms : int (optional)
-        Number of terms in the Fourier series.
-    """
-    t = np.atleast_1d(t)
-    a = np.ones_like(t)
-
-    # design matrix
-    X = a.reshape(1,-1)
-    for k in range(1,n_terms+1):
-        x_k = np.cos(2*np.pi*k*t / P)
-        y_k = np.sin(2*np.pi*k*t / P)
-        X = np.vstack((X, x_k, y_k))
-    return X.T
-
-def sinusoid_model(p, t, P, n_terms=1):
-    """
-
-    Parameters
-    ----------
-    p : array_like
-        Parameter vector. For a 1-term fit, this is `(v0, a1, b1)`.
-    t : array_like [day]
-        Array of times in days.
-    P : numeric [day]
-        Value of the period in days.
-    n_terms : int (optional)
-        Number of terms in the Fourier series.
 
     Returns
     -------
-    f : `numpy.ndarray` [au/day]
-        Sinusoid model computed at each time, `t` in units of au/day
+    A : `numpy.ndarray`
+
     """
-    p = np.array(p)
-    A = design_matrix(t, P)
-    return (p[np.newaxis] * A).sum(axis=-1)
+    t = np.atleast_1d(t)
+    P, phi0, ecc, omega = nonlinear_p
+
+    t0 = find_t0(phi0, P, EPOCH)
+
+    a = np.ones_like(t)
+    x1 = rv_from_elements(t, P, 1., ecc, omega, t0, 0.)
+    A = np.vstack((a, x1)).T
+    return A
+
+def tensor_vector_scalar(nonlinear_p, data):
+    """
+
+    Parameters
+    ----------
+    nonlinear_p : array_like
+        Array of non-linear parameter values: P (period),
+        phi0 (phase at pericenter), ecc (eccentricity),
+        omega (argument of perihelion).
+    data : `ebak.singleline.RVData`
+        Instance of `RVData` containing the data to fit.
+
+    Returns
+    -------
+    ATA : `numpy.ndarray`
+        Value of A^T C^-1 A -- inverse of the covariance matrix
+        of the linear parameters.
+    p : `numpy.ndarray`
+        Optimal values of linear parameters.
+    chi2 : float
+        Chi-squared value.
+
+    """
+    A = design_matrix_kepler(data._t, nl_p)
+    ATCinv = (A.T * data._ivar[None])
+    ATA = ATCinv.dot(A)
+
+    # Note: this is unstable! if cond num is high, could do:
+    # p,*_ = np.linalg.lstsq(A, y)
+    p = np.linalg.solve(ATA, ATCinv.dot(data._rv))
+
+    dy = A.dot(p) - data._rv
+    chi2 = np.sum(dy**2 * data._ivar)
+
+    return ATA, p, chi2
+
+def marginal_ln_likelihood(ATA, chi2):
+    """
+
+    Parameters
+    ----------
+    ATA : array_like
+        Should have shape `(N, M, M)` or `(M, M)` where `M`
+        is the number of linear parameters in the model.
+    chi2 : numeric, array_like
+        Chi-squared value(s).
+
+    Returns
+    -------
+    marg_ln_like : `numpy.ndarray`
+        Marginal log-likelihood values.
+
+    """
+    sign,logdet = np.linalg.slogdet(ATA)
+    assert np.all(sign == 1.)
+    return -0.5*np.atleast_1d(chi2) + 0.5*logdet
 
 def period_grid(data, P_min=1, P_max=1E4, resolution=2):
     """
@@ -87,31 +126,3 @@ def period_grid(data, P_min=1, P_max=1E4, resolution=2):
     dP_grid = _grid_element(P_grid)
 
     return P_grid, dP_grid
-
-def tensor_vector_scalar_sinusoid(P, data):
-    A = design_matrix(data._t, P)
-    ATCinv = (A.T * data._ivar[None])
-    ATA = ATCinv.dot(A)
-
-    # Note: this is unstable!
-    p = np.linalg.solve(ATA, ATCinv.dot(data._rv))
-    # if cond num is high, do:
-    # p,*_ = np.linalg.lstsq(A, y)
-
-    dy = sinusoid_model(p, data._t, P) - data._rv
-    chi2 = np.sum(dy**2 * data._ivar)
-
-    return ATA, p, chi2
-
-def marginal_ln_likelihood(P, data):
-    ATA,p,chi2 = tensor_vector_scalar(P, data)
-
-    sign,logdet = np.linalg.slogdet(ATA)
-    assert sign == 1.
-
-    return -0.5*chi2 + 0.5*logdet
-
-def sample_posterior(P_grid, probs, size=1):
-    norm_cumsum = np.cumsum(probs) / probs.sum()
-    inv_cdf = interp1d(norm_cumsum, P_grid, kind='linear')
-    return inv_cdf(np.random.uniform(size=size))

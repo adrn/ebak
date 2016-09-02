@@ -1,33 +1,17 @@
 #!/bin/bash
-#SBATCH -J troup           # job name
-#SBATCH -o troup.o%j             # output file name (%j expands to jobID)
-#SBATCH -e troup.e%j             # error file name (%j expands to jobID)
+#SBATCH -J sampler           # job name
+#SBATCH -o sampler.o%j             # output file name (%j expands to jobID)
+#SBATCH -e sampler.e%j             # error file name (%j expands to jobID)
 #SBATCH -n 256                   # total number of mpi tasks requested
 #SBATCH -p normal          # queue (partition) -- normal, development, etc.
 #SBATCH -A TG-AST150023         # Project ID
 #SBATCH -t 02:00:00             # run time (hh:mm:ss) - 1.5 hours
-#SBATCH --mail-user=amp2217@columbia.edu
+#SBATCH --mail-user=adrn@princeton.edu
 #SBATCH --mail-type=begin       # email me when the job starts
 #SBATCH --mail-type=end         # email me when the job finishes
-
-export SAMPLER='kombine'
-# export NBURN=128 # Irrelevant for Kombine
-# export NSTEPS=4096
-# export NWALKERS=512
-export NBURN=1 # Irrelevant for Kombine
-export NSTEPS=4096
-export NWALKERS=512
 
 cd $WORK/projects/ebak/scripts/
 
 source activate ebak
 
-# ibrun python mcmc-troup.py -v -s $SAMPLER -o --n-steps=$NSTEPS --n-burnin=$NBURN --n-walkers=$NWALKERS --index=0 --mpi
-
-ibrun python mcmc-troup-test-pool.py  -v -s $SAMPLER -o --n-steps=$NSTEPS --n-burnin=$NBURN --n-walkers=$NWALKERS --index=0 --mpi
-
-# NTROUP=2
-# for ((i=0; i<NTROUP; i++)); do
-#     ibrun python mcmc-troup.py -v -s $SAMPLER -o --n-steps=$NSTEPS --n-burnin=$NBURN --n-walkers=$NWALKERS --index=$i --mpi
-#     wait
-# done
+ibrun python demo-sampler.py -v --id="2M03080601+7950502" --mpi

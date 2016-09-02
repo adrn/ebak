@@ -33,7 +33,7 @@ if not exists(join("..", "scripts")):
 
 # HACKS: Hard-set paths
 ALLVISIT_DATA_PATH = join(_basepath, "data", "allVisit-l30e.2.fits")
-PLOT_PATH = join(_basepath, "plots", "ahw2016-magic")
+PLOT_PATH = join(_basepath, "plots", "sampler")
 CACHE_PATH = join(_basepath, "cache")
 for PATH in [PLOT_PATH, CACHE_PATH]:
     if not exists(PATH):

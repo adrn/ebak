@@ -43,6 +43,7 @@ APOGEE_ID = "2M03080601+7950502"
 n_samples = 2**8 # HACK: temporary
 P_min = 16. # day
 P_max = 8192. # day
+jitter = 0.5*u.km/u.s # TODO: set this same as Troup
 
 def marginal_ll_worker(task):
     nl_p, data = task
@@ -102,11 +103,12 @@ def main(n_procs=0, mpi=False, seed=42, overwrite=False):
     logger.debug("Reading data from Troup catalog and allVisit files...")
     all_data = RVData.from_apogee(ALLVISIT_DATA_PATH, apogee_id=APOGEE_ID)
 
+    # HACK: add extra jitter to velocities
+    data_var = all_data.stddev**2 + jitter**2
+    all_data._ivar = (1 / data_var).to(all_data.ivar.unit).value
+
     # a time grid to plot RV curves of the model - used way later
     t_grid = np.linspace(all_data._t.min()-50, all_data._t.max()+50, 1024)
-
-    # TODO: add jitter below
-    # s = 0.5 * u.km/u.s
 
     # sample from priors in nonlinear parameters
     P = np.exp(np.random.uniform(np.log(P_min), np.log(P_max), size=n_samples))
@@ -164,14 +166,13 @@ def main(n_procs=0, mpi=False, seed=42, overwrite=False):
         MAX_N_LINES = 256
 
         # plot samples
-        fig = plt.figure(figsize=(12,12))
+        fig = plt.figure(figsize=(6,6))
         gs = gridspec.GridSpec(2, 2)
 
         ax_rv = plt.subplot(gs[0,:])
         ax_lnP_e = plt.subplot(gs[1,0])
         ax_lnP_asini = plt.subplot(gs[1,1])
 
-        n_lines = min(len(orbital_params), MAX_N_LINES)
         with h5py.File(output_filename, 'r') as f:
             g = f[str(n_delete)]
 
@@ -182,15 +183,17 @@ def main(n_procs=0, mpi=False, seed=42, overwrite=False):
             phi0 = _getq(g,'phi0')
             v0 = _getq(g,'v0')
 
+            n_lines = min(len(P), MAX_N_LINES)
+
             n_pts = len(P)
-            pt_alpha = min(0.8, max(0.1, 0.8 + 0.7*(np.log(2)-np.log(n_pts))/(np.log(1024)-np.log(2))))
+            pt_alpha = min(0.95, max(0.1, 0.95 + 0.85*(np.log(2)-np.log(n_pts))/(np.log(1024)-np.log(2))))
             Q = 3. # HACK
             line_alpha = 0.1 + Q / (n_lines + Q)
 
             ax_lnP_e.plot(np.log(P.to(u.day).value), ecc,
-                          marker='.', color='k', alpha=pt_alpha, ms=8, ls='none')
+                          marker='.', color='k', alpha=pt_alpha, ms=5, ls='none')
             ax_lnP_asini.plot(np.log(P.to(u.day).value), np.log(asini.to(u.au).value),
-                              marker='.', color='k', alpha=pt_alpha, ms=8, ls='none')
+                              marker='.', color='k', alpha=pt_alpha, ms=5, ls='none')
 
             for i in range(len(P)):
                 orbit = SimulatedRVOrbit(P=P[i], a_sin_i=asini[i], ecc=ecc[i],
@@ -202,7 +205,7 @@ def main(n_procs=0, mpi=False, seed=42, overwrite=False):
                 if i >= MAX_N_LINES:
                     break
 
-        data.plot(ax=ax_rv)
+        data.plot(ax=ax_rv, markersize=3)
         ax_rv.set_xlim(t_grid.min()-25, t_grid.max()+25)
         _rv = all_data.rv.to(u.km/u.s).value
         ax_rv.set_ylim(np.median(_rv)-20, np.median(_rv)+20)
@@ -220,7 +223,7 @@ def main(n_procs=0, mpi=False, seed=42, overwrite=False):
         ax_lnP_asini.set_ylabel(r'$\ln (a \sin i)$')
 
         fig.tight_layout()
-        fig.savefig(join(PLOT_PATH, 'delete-{}.png'.format(n_delete)))
+        fig.savefig(join(PLOT_PATH, 'delete-{}.png'.format(n_delete)), dpi=300)
 
         # fig = corner.corner(np.hstack((np.log(nl_p[:,0:1]), nl_p[:,1:])),
         #                     labels=['$\ln P$', r'$\phi_0$', '$e$', r'$\omega$'])

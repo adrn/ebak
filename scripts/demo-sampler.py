@@ -49,7 +49,11 @@ jitter = 0.5*u.km/u.s # TODO: set this same as Troup
 def marginal_ll_worker(task):
     nl_p, data = task
     ATA,p,chi2 = tensor_vector_scalar(nl_p, data)
-    return marginal_ln_likelihood(ATA, chi2)
+    try:
+        ll = marginal_ln_likelihood(ATA, chi2)
+    except:
+        ll = np.nan
+    return ll
 
 def get_good_samples(nonlinear_p, data, pool):
     tasks = [[nonlinear_p[i], data] for i in range(len(nonlinear_p))]

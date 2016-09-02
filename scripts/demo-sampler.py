@@ -39,8 +39,7 @@ for PATH in [PLOT_PATH, CACHE_PATH]:
     if not exists(PATH):
         os.mkdir(PATH)
 
-APOGEE_ID = "2M03080601+7950502"
-n_samples = 2**18
+n_samples = 2**20
 P_min = 16. # day
 P_max = 8192. # day
 jitter = 0.5*u.km/u.s # TODO: set this same as Troup
@@ -93,7 +92,7 @@ def _getq(f, key):
         unit = 1.
     return f[key][:] * unit
 
-def main(n_procs=0, mpi=False, seed=42, overwrite=False):
+def main(APOGEE_ID, n_procs=0, mpi=False, seed=42, overwrite=False):
 
     output_filename = join(CACHE_PATH, "{}.h5".format(APOGEE_ID))
 
@@ -257,6 +256,9 @@ if __name__ == "__main__":
     group.add_argument("--mpi", dest="mpi", default=False,
                        action="store_true", help="Run with MPI.")
 
+    parser.add_argument("--id", dest="apogee_id", default=None, required=True,
+                        type=str, help="APOGEE ID")
+
     args = parser.parse_args()
 
     # Set logger level based on verbose flags
@@ -269,5 +271,5 @@ if __name__ == "__main__":
 
     np.random.seed(args.seed)
 
-    main(n_procs=args.n_procs, mpi=args.mpi, seed=args.seed,
-         overwrite=args.overwrite)
+    main(APOGEE_ID=args.apogee_id, n_procs=args.n_procs,
+         mpi=args.mpi, seed=args.seed, overwrite=args.overwrite)

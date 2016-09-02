@@ -6,6 +6,7 @@
 \newcommand{\dr}{\acronym{DR13}}
 
 \newcommand{\meterspersecond}{\mathrm{m\,s^{-1}}}
+\newcommand{\asini}{a\,\sin i}
 
 \begin{document}
 
@@ -134,7 +135,15 @@ to be outliers and unaccounted sources of noise.
 We will return to these assumptions, and the consequences of relaxing
 them, in the Discussion Section.
 
+In the Kepler problem (and here we are working similar to
+\citealt{winn}), and under our above-stated assumptions, the
+radial-velocity expectation can be parameterized by six parameters,
+which we choose to be period $P$, projected semi-major axis $\asini$,
+a phase $\phi_0$ corresponding to a time of pericenter passage, the
+eccentricity $e$, an argument of perihelion $\varpi$, and a constant 
+system barycenter radial velocity $v_0$.
 
+Of these parameters, four ($P$, $\asini$, 
 
 We have three options at this point: (1) just run the fucking MCMC and
 make sure it converges, (2) do the solvable problem (single siusoid)
@@ -154,5 +163,12 @@ This research was partially supported by [many grants].
 This project was started at AstroHackWeek 2016, organized by Kyle
 Barbary (UCB) and Phil Marshall (SLAC) at the Berkeley Institute for
 Data Science.
+
+\begin{thebibliography}{99}\raggedright
+\bibitem[Kipping(2013)]{kipping}
+  Kipping, D.~M.\ 2013, \mnras, 434, L51
+\bibitem[Winn(2010)]{winn}
+  Winn, J.~N.\ 2010, Exoplanets, 55 
+\end{thebibliography}
 
 \end{document}

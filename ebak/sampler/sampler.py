@@ -2,7 +2,9 @@
 import numpy as np
 from scipy.interpolate import interp1d
 
+from .. import EPOCH
 from ..util import find_t0
+from ..celestialmechanics import rv_from_elements
 
 __all__ = ['design_matrix', 'tensor_vector_scalar', 'marginal_ln_likelihood',
            'period_grid']
@@ -57,7 +59,7 @@ def tensor_vector_scalar(nonlinear_p, data):
         Chi-squared value.
 
     """
-    A = design_matrix(data._t, nl_p)
+    A = design_matrix(nonlinear_p, data._t)
     ATCinv = (A.T * data._ivar[None])
     ATA = ATCinv.dot(A)
 

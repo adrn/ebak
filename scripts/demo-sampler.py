@@ -58,7 +58,7 @@ def marginal_ll_worker(task):
 def get_good_samples(nonlinear_p, data, pool):
     tasks = [[nonlinear_p[i], data] for i in range(len(nonlinear_p))]
     results = pool.map(marginal_ll_worker, tasks)
-    marg_ll = np.array(results)[:,0]
+    marg_ll = np.squeeze(results)
 
     uu = np.random.uniform(size=n_samples)
     good_samples_bool = uu < np.exp(marg_ll - marg_ll.max())

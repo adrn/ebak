@@ -1,4 +1,5 @@
 # Standard library
+from collections import OrderedDict
 import os
 from os.path import abspath, join, split, exists
 import time
@@ -19,6 +20,7 @@ import corner
 from gala.util import get_pool
 
 # Project
+from ebak import SimulatedRVOrbit
 from ebak.singleline.data import RVData
 from ebak.sampler import tensor_vector_scalar, marginal_ln_likelihood
 from ebak.units import usys
@@ -81,6 +83,14 @@ def samples_to_orbital_params(nonlinear_p, data, pool):
     orbit_pars = pool.map(samples_to_orbital_params_worker, tasks)
     return np.array(orbit_pars).T
 
+def _getq(f, key):
+    if 'unit' in f[key].attrs and f[key].attrs['unit'] is not None:
+        unit = u.Unit(f[key].attrs['unit'])
+    else:
+        unit = 1.
+    print(key, unit)
+    return f[key][:] * unit
+
 def main(n_procs=0, mpi=False, seed=42, overwrite=False):
 
     output_filename = join(CACHE_PATH, "ahw2016-magic.h5")
@@ -122,103 +132,103 @@ def main(n_procs=0, mpi=False, seed=42, overwrite=False):
         logger.debug("Removing {}/{} data points".format(n_delete, len(all_data)))
 
         # see if we already did this:
+        skip_compute = False
         with h5py.File(output_filename, 'a') as f:
             if str(n_delete) in f and not overwrite:
-                continue # skip if already did this one
+                skip_compute = True # skip if already did this one
 
             elif str(n_delete) in f and overwrite:
                 del f[str(n_delete)]
 
-        nl_samples = get_good_samples(nl_p, data, pool) # TODO: save?
-        orbital_params = samples_to_orbital_params(nl_samples, data, pool)
+        if not skip_compute:
+            nl_samples = get_good_samples(nl_p, data, pool) # TODO: save?
+            orbital_params = samples_to_orbital_params(nl_samples, data, pool)
 
-        # save the orbital parameters out to a cache file
-        par_names = ['P', 'asini', 'ecc', 'omega', 'phi0', 'v0']
-        par_units = [usys['time'], usys['length'], None, usys['angle'],
-                     usys['angle'], usys['length']/usys['time']]
-        with h5py.File(output_filename, 'r+') as f:
-            g = f.create_group(str(n_delete))
+            # save the orbital parameters out to a cache file
+            par_spec = OrderedDict()
+            par_spec['P'] = usys['time']
+            par_spec['asini'] = usys['length']
+            par_spec['ecc'] = None
+            par_spec['omega'] = usys['angle']
+            par_spec['phi0'] = usys['angle']
+            par_spec['v0'] = usys['length']/usys['time']
+            with h5py.File(output_filename, 'r+') as f:
+                g = f.create_group(str(n_delete))
 
-            for i,name,unit in zip(range(len(par_names)), par_names, par_units):
-                g.create_dataset(name, data=orbital_params[i])
-                g[name].attrs['unit'] = str(unit)
+                for i,(name,unit) in enumerate(par_spec.items()):
+                    g.create_dataset(name, data=orbital_params[i])
+                    if unit is not None:
+                        g[name].attrs['unit'] = str(unit)
 
         # --------------------------------------------------------------------
         # make some plots, yo
+        MAX_N_LINES = 256
 
         # plot samples
         fig = plt.figure(figsize=(12,12))
         gs = gridspec.GridSpec(2, 2)
+
         ax_rv = plt.subplot(gs[0,:])
         ax_lnP_e = plt.subplot(gs[1,0])
         ax_lnP_asini = plt.subplot(gs[1,1])
 
-        _max_n = min(n_eff, 256)
-        shit_fuck = min(n_eff, 1024)
+        n_lines = min(len(orbital_params), MAX_N_LINES)
+        with h5py.File(output_filename, 'r') as f:
+            g = f[str(n_delete)]
 
-        Q = 3. # HACK
-        pt_alpha = min(0.8, max(0.2, 0.8 + 0.6*(np.log(2)-np.log(shit_fuck))/(np.log(1024)-np.log(2)))) # YEA BABY
-        print(pt_alpha)
-        for fucky,j in enumerate(good_samples[:shit_fuck]):
-            ATA,p,_ = tensor_vector_scalar_kepler(nl_p[j], data)
-            cov = np.linalg.inv(ATA)
-            v0,asini = np.random.multivariate_normal(p, cov)
+            P = _getq(g,'P')
+            asini = _getq(g,'asini')
+            ecc = _getq(g,'ecc')
+            omega = _getq(g,'omega')
+            phi = _getq(g,'phi0')
+            v0 = _getq(g,'v0')
 
-            P, phi0, ecc, omega = nl_p[j]
+            n_pts = len(P)
+            pt_alpha = min(0.8, max(0.1, 0.8 + 0.7*(np.log(2)-np.log(n_pts))/(np.log(1024)-np.log(2))))
+            Q = 3. # HACK
+            line_alpha = 0.1 + Q / (n_lines + Q)
 
-            if asini < 0:
-                # logger.warning("Swapping asini")
-                asini = np.abs(asini)
-                omega += np.pi
-            t0 = find_t0(phi0, P, EPOCH)
+            ax_lnP_e.plot(np.log(P.to(u.day).value), ecc,
+                          marker='.', color='k', alpha=pt_alpha, ms=8)
+            ax_lnP_asini.plot(np.log(P.to(u.day).value), np.log(asini.to(u.au).value),
+                              marker='.', color='k', alpha=pt_alpha, ms=8)
 
-            model_rv = (rv_from_elements(_t, P, asini, ecc, omega, t0, -v0)*u.au/u.day).to(u.km/u.s)
-            if fucky < _max_n: # HACK
-                line_alpha = 0.1 + Q*0.65 / (fucky + Q)
-                ax_rv.plot(_t, model_rv, linestyle='-', marker=None,
-                           alpha=line_alpha, color='r')
+            for i in range(len(P)):
+                orbit = SimulatedRVOrbit(P=P[i], a_sin_i=asini[i], ecc=ecc[i],
+                                         omega=omega[i], phi0=phi0[i], v0=v0[[i]])
+                model_rv = orbit.generate_rv_curve(t_grid).to(u.km/u.s).value
+                ax_rv.plot(t_grid, model_rv, linestyle='-', marker=None,
+                           alpha=line_alpha, color='#3182bd')
 
-            ax_lnP_e.plot(np.log(P), ecc, marker='.', color='k',
-                          alpha=pt_alpha, ms=8)
-            ax_lnP_asini.plot(np.log(P), np.log(asini), marker='.', color='k',
-                              alpha=pt_alpha, ms=8)
+                if i >= MAX_N_LINES:
+                    break
 
-            logger.debug("Parameters:")
-            logger.debug("\t P={:.2f} day".format(P))
-            logger.debug("\t phi0={:.3f} rad".format(phi0))
-            logger.debug("\t e={:.3f}".format(ecc))
-            logger.debug("\t omega={:.3f} rad".format(omega))
-            logger.debug("\t v0={:.3f} km/s".format((v0*u.au/u.day).to(u.km/u.s).value))
-            logger.debug("\t asini={:.3f} au".format(asini))
-
-        ax_rv.errorbar(data._t, data.rv.to(u.km/u.s).value,
-                       yerr=data.stddev.to(u.km/u.s).value,
-                       marker='o', linestyle='none', color='k')
-        ax_rv.set_xlim(_t.min()-25, _t.max()+25)
+        data.plot(ax=ax_rv)
+        ax_rv.set_xlim(t_grid.min()-25, t_grid.max()+25)
         _rv = all_data.rv.to(u.km/u.s).value
-        ax_rv.set_ylim(np.median(_rv)-25, np.median(_rv)+25)
+        ax_rv.set_ylim(np.median(_rv)-10, np.median(_rv)+10)
         ax_rv.set_xlabel('MJD')
         ax_rv.set_ylabel('RV [km s$^{-1}$]')
 
-        ax_lnP_e.set_xlim(np.log(P_min), 6.) # HACK
+        ax_lnP_e.set_xlim(np.log(P_min) - 0.1, 6. + 0.1) # HACK
         ax_lnP_e.set_ylim(-0.1, 1.)
         ax_lnP_e.set_xlabel(r'$\ln P$')
         ax_lnP_e.set_ylabel(r'$e$')
 
-        ax_lnP_asini.set_xlim(np.log(P_min), 6.) # HACK
-        ax_lnP_asini.set_ylim(-4, 0)
+        ax_lnP_asini.set_xlim(ax_lnP_e.get_xlim())
+        ax_lnP_asini.set_ylim(-6, 0)
         ax_lnP_asini.set_xlabel(r'$\ln P$')
         ax_lnP_asini.set_ylabel(r'$\ln (a \sin i)$')
 
         fig.tight_layout()
-        fig.savefig(join(PLOT_PATH, 'leave_out_{}.png'.format(leave_out)))
+        fig.savefig(join(PLOT_PATH, 'delete-{}.png'.format(leave_out)))
 
         # fig = corner.corner(np.hstack((np.log(nl_p[:,0:1]), nl_p[:,1:])),
         #                     labels=['$\ln P$', r'$\phi_0$', '$e$', r'$\omega$'])
         # plt.savefig(join(PLOT_PATH, 'corner-leave_out_{}.png'.format(leave_out)))
         plt.close('all')
 
-    # pool.close()
+    pool.close()
 
 if __name__ == "__main__":
     from argparse import ArgumentParser

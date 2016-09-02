@@ -1,4 +1,5 @@
 # Third-party
+from astropy import log as logger
 import numpy as np
 from scipy.interpolate import interp1d
 
@@ -90,7 +91,8 @@ def marginal_ln_likelihood(ATA, chi2):
 
     """
     sign,logdet = np.linalg.slogdet(ATA)
-    assert np.all(sign == 1.)
+    if not np.all(sign == 1.):
+        logger.warning('logdet sign < 0')
     return -0.5*np.atleast_1d(chi2) + 0.5*logdet
 
 def period_grid(data, P_min=1, P_max=1E4, resolution=2):

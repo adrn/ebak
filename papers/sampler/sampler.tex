@@ -11,7 +11,7 @@
 
 \title{A custom Monte Carlo sampler
   for binary-star and exoplanet radial velocity data}
-\author{APW, DWH, DFM, others}
+\author{APW, DWH, DFM, HWR, others}
 
 \begin{abstract}
 % Context
@@ -113,13 +113,31 @@ In order to set up a well-posed problem and build a path to a
 definite solution, we make a set of non-trivial assumptions about the
 stellar systems we are observing.
 \begin{enumerate}
-\item Gaussianity and independence with known variances.
-\item Only zero or one component, single-line, unconaminated stellar spectrum.
-\item Kepler problem is an accurate description.
-\item Priors.
+\item We assume that we have measurements of the radial velocity of a
+  star, and that the time dependence of the expectation of that radial
+  velocity is well described by the gravitational orbit of a pair of
+  point masses (the Kepler problem).
+\item We assume that each star has only zero or one companions, and
+  that the radial-velocity measurements are not contaminated by nor
+  affected by any other bodies.
+\item We assume that the noise contributions to individual
+  radial-velocity measurements are well described as draws from
+  zero-mean normal (Gaussian) distributions with correctly known
+  variances. We assume that there are no outliers.
+\item In addition to all these, we put particular, fairly sensible
+  parameters on all the orbital parameters, described below.
 \end{enumerate}
+Each of these assumptions can be challenged, and in particular we
+expect some stars to have additional companions, and we expect there
+to be outliers and unaccounted sources of noise.
+We will return to these assumptions, and the consequences of relaxing
+them, in the Discussion section.
 
-We have three options at this point: (1) just run the fucking MCMC and make sure it converges, (2) do the solvable problem (single siusoid) and important sample down to the correct problem (the full Kepler problem), or (3) Monte Carlo sample the nonlinear parameters after marginalizing out the linear parameters.
+We have three options at this point: (1) just run the fucking MCMC and
+make sure it converges, (2) do the solvable problem (single siusoid)
+and important sample down to the correct problem (the full Kepler
+problem), or (3) simple-Monte-Carlo sample the nonlinear parameters after
+marginalizing out the linear parameters.
 
 \section{Experiments and results}
 
@@ -127,8 +145,11 @@ We have three options at this point: (1) just run the fucking MCMC and make sure
 
 \acknowledgements
 It is a pleasure to thank
-  Hans-Walter Rix (MPIA)
+  Ben Weaver (NOAO),
 for valuable discussions.
-DWH thanks [many things].
+This research was partially supported by [many grants].
+This project was started at AstroHackWeek 2016, organized by Kyle
+Barbary (UCB) and Phil Marshall (SLAC) at the Berkeley Institute for
+Data Science.
 
 \end{document}

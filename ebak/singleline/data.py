@@ -82,5 +82,11 @@ class RVData(object):
     def copy(self):
         return self.__copy__()
 
+    def __getitem__(self, slc):
+        return self.__class__(t=self.t.copy()[slc],
+                              rv=self.rv.copy()[slc],
+                              ivar=self.ivar.copy()[slc])
 
+    def __len__(self):
+        return len(self._t)
 

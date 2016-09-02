@@ -180,7 +180,7 @@ def main(n_procs=0, mpi=False, seed=42, overwrite=False):
             asini = _getq(g,'asini')
             ecc = _getq(g,'ecc')
             omega = _getq(g,'omega')
-            phi = _getq(g,'phi0')
+            phi0 = _getq(g,'phi0')
             v0 = _getq(g,'v0')
 
             n_pts = len(P)
@@ -221,7 +221,7 @@ def main(n_procs=0, mpi=False, seed=42, overwrite=False):
         ax_lnP_asini.set_ylabel(r'$\ln (a \sin i)$')
 
         fig.tight_layout()
-        fig.savefig(join(PLOT_PATH, 'delete-{}.png'.format(leave_out)))
+        fig.savefig(join(PLOT_PATH, 'delete-{}.png'.format(n_delete)))
 
         # fig = corner.corner(np.hstack((np.log(nl_p[:,0:1]), nl_p[:,1:])),
         #                     labels=['$\ln P$', r'$\phi_0$', '$e$', r'$\omega$'])

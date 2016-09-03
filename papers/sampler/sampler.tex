@@ -23,6 +23,9 @@
 \makeatother
 \sloppy\sloppypar\frenchspacing
 
+% better links
+\usepackage[backref,breaklinks,colorlinks,citecolor=blue]{hyperref}
+
 % define macros for text
 \newcommand{\project}[1]{\textsl{#1}}
 \newcommand{\acronym}[1]{{\small{#1}}}
@@ -33,7 +36,13 @@
 
 % define macros for math
 \newcommand{\meterspersecond}{\mathrm{m\,s^{-1}}}
-\newcommand{\asini}{a\,\sin i}
+\newcommand{\asini}{\ensuremath{a\,\sin i}}
+\newcommand{\given}{\,|\,}
+\newcommand{\dd}{\mathrm{d}}
+\newcommand{\transpose}[1]{{#1}^{\mathsf{T}}}
+\newcommand{\inv}[1]{{#1}^{-1}}
+\newcommand{\msun}{\mathrm{M}_\odot}
+\newcommand{\bs}[1]{\boldsymbol{#1}}
 
 \begin{document}
 
@@ -78,7 +87,7 @@ sampling in the space of orbital parameters.
 % Aims
 Here we create a custom-build Monte Carlo sampler that can produce a
 posterior sampling for orbital parameters given even small numbers of
-noisy radial-valocity measurements (and hence very complex likelihood
+noisy radial-velocity measurements (and hence very complex likelihood
 function).
 The goal is to obtain provably correct samplings in the space of
 orbital parameters.
@@ -209,9 +218,16 @@ which we choose to be period $P$, projected semi-major axis $\asini$,
 a phase $\phi_0$ corresponding to a time of pericenter passage, the
 eccentricity $e$, an argument of perihelion $\varpi$, and a constant
 system barycenter radial velocity $v_0$.
+The radial velocity $v_r$ at time $t$ is then given by
+\begin{equation}
+  v_r(t) = \asini \, (1-e\,\cos E) \cos(\varpi + f) \, \frac{\dd f}{\dd t} +
+    \asini \sin(\varpi + f)\, e \, \sin E \, \frac{\dd E}{\dd t}
+\end{equation}
+where $f$ and $E$ are the mean and eccentric anomalies, respectively.
 Of these parameters, four ($P$, $\phi_0$, $e$, $\varpi$) are
 non-linearly related to the radial-velocity expectation, and two
 ($\asini$, $v_0$) are linearly related.
+
 Fundamentally, our method is to perform \emph{simple Monte Carlo} in
 the non-linear parameters, and analytically marginalize out the linear
 parameters.
@@ -262,23 +278,24 @@ This project was started at AstroHackWeek 2016, organized by Kyle
 Barbary (UCB) and Phil Marshall (SLAC) at the Berkeley Institute for
 Data Science.
 
-\begin{thebibliography}{99}\raggedright
-\bibitem[Alam et al.(2015)]{dr12}
-  Alam,~S., Albareti,~F.~D., Allende~Prieto,~C., et al.\ 2015, \apjs, 219, 12
-\bibitem[Eisenstein et al.(2011)]{sdssiii}
-  Eisenstein, D.~J., Weinberg, D.~H., Agol, E., et al.\ 2011, \aj, 142, 72 
-\bibitem[Holtzman et al.(2015)]{apogeedr12}
-  Holtzman, J.~A., Shetrone, M., Johnson, J.~A., et al.\ 2015, \aj, 150, 148
-\bibitem[Kepler(1609)]{kepler}
-  Kepler, J.\ 1609, \textit{Astronomia nova\ldots}
-\bibitem[Kipping(2013)]{kipping}
-  Kipping, D.~M.\ 2013, \mnras, 434, L51
-\bibitem[Majewski et al.(2015)]{apogee}
-  Majewski,~S.~R., Schiavon,~R.~P., Frinchaboy,~P.~M., et al.\ 2015, arXiv:1509.05420
-\bibitem[Troup et al.(2016)]{troup}
-  Troup, N.~W., Nidever, D.~L., De Lee, N., et al.\ 2016, \aj, 151, 85 
-\bibitem[Winn(2010)]{winn}
-  Winn, J.~N.\ 2010, Exoplanets, 55 
-\end{thebibliography}
+%\begin{thebibliography}{99}\raggedright
+%
+%\bibitem[Alam et al.(2015)]{dr12}
+%  Alam,~S., Albareti,~F.~D., Allende~Prieto,~C., et al.\ 2015, \apjs, 219, 12
+%\bibitem[Eisenstein et al.(2011)]{sdssiii}
+%  Eisenstein, D.~J., Weinberg, D.~H., Agol, E., et al.\ 2011, \aj, 142, 72
+%\bibitem[Holtzman et al.(2015)]{apogeedr12}
+%  Holtzman, J.~A., Shetrone, M., Johnson, J.~A., et al.\ 2015, \aj, 150, 148
+%\bibitem[Kepler(1609)]{kepler}
+%  Kepler, J.\ 1609, \textit{Astronomia nova\ldots}
+%\bibitem[Kipping(2013)]{kipping}
+%  Kipping, D.~M.\ 2013, \mnras, 434, L51
+%\bibitem[Majewski et al.(2015)]{apogee}
+%  Majewski,~S.~R., Schiavon,~R.~P., Frinchaboy,~P.~M., et al.\ 2015, arXiv:1509.05420
+%\bibitem[Troup et al.(2016)]{troup}
+%  Troup, N.~W., Nidever, D.~L., De Lee, N., et al.\ 2016, \aj, 151, 85
+%\bibitem[Winn(2010)]{winn}
+%  Winn, J.~N.\ 2010, Exoplanets, 55
+%\end{thebibliography}
 
 \end{document}

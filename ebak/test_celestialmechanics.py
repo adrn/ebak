@@ -22,6 +22,8 @@ def test_everything():
         e = np.random.uniform()
         omega = 2. * np.pi * np.random.uniform() # rad
         time0, time = tt0 + (tt1 - tt0) * np.random.uniform(size=2) # d
+        phi0 = 2*np.pi*time0/P
+
         sini = 1.0
         print("testing", P, a*sini, e, omega, time, time0)
         big = 65536.0 # MAGIC
@@ -42,7 +44,7 @@ def test_everything():
             print("dfdE", dfdE, dfdE2, dfdE - dfdE2)
             assert False
         Z, Z1, Z2 = Z_from_elements(threetimes, P, a*sini, e, omega, time0)
-        rv = rv_from_elements(time, P, a*sini, e, omega, time0, 0.)
+        rv = rv_from_elements(time, P, a*sini, e, omega, phi0, 0.)
         rv2 = (Z2 - Z1) / dt
         if np.abs(rv - rv2) > (a / P) * (1. / big):
             print("RV", rv, rv2, rv - rv2)

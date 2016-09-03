@@ -30,10 +30,8 @@ def design_matrix(nonlinear_p, t):
     t = np.atleast_1d(t)
     P, phi0, ecc, omega = nonlinear_p
 
-    t0 = find_t0(phi0, P, EPOCH)
-
     a = np.ones_like(t)
-    x1 = rv_from_elements(t, P, 1., ecc, omega, t0, 0.)
+    x1 = rv_from_elements(t, P, 1., ecc, omega, phi0, 0.)
     A = np.vstack((a, x1)).T
     return A
 

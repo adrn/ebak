@@ -132,7 +132,7 @@ class SimulatedRVOrbit(RVOrbit):
             _t = t
 
         rv = rv_from_elements(_t, self._P, self._a_sin_i,
-                              self.ecc, self._omega, self._t0,
+                              self.ecc, self._omega, self._phi0,
                               self._v0)
         return rv
 

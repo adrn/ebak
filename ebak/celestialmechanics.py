@@ -206,7 +206,7 @@ def Z_from_elements(times, P, asini, e, omega, time0):
 
     return rs * np.sin(omega + fs)
 
-def rv_from_elements(times, P, asini, e, omega, time0, rv0):
+def rv_from_elements(times, P, asini, e, omega, phi0, rv0):
     """
     Parameters
     ----------
@@ -221,8 +221,8 @@ def rv_from_elements(times, P, asini, e, omega, time0, rv0):
         Eccentricity.
     omega : numeric [radian]
         Perihelion argument parameter from Winn.
-    time0 : numeric [day]
-        Time of "zeroth" pericenter.
+    phi0 : numeric [radian]
+        Phase at pericenter.
     rv0 : numeric [AU/day]
         Systemic velocity.
 
@@ -236,9 +236,11 @@ def rv_from_elements(times, P, asini, e, omega, time0, rv0):
     - could be made more efficient (there are lots of re-dos of trig calls)
     """
     times = np.array(times)
+    phase = 2 * np.pi * times / P
 
     dMdt = 2. * np.pi / P
-    Ms = (times - time0) * dMdt
+    # Ms = (times - time0) * dMdt
+    Ms = phase - phi0
 
     Es = eccentric_anomaly_from_mean_anomaly(Ms, e)
     fs = true_anomaly_from_eccentric_anomaly(Es, e)
@@ -251,4 +253,4 @@ def rv_from_elements(times, P, asini, e, omega, time0, rv0):
 
     rvs = rs * np.cos(omega + fs) * dfdts + np.sin(omega + fs) * drdts
 
-    return rvs - rv0
+    return rvs + rv0

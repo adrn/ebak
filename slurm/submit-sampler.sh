@@ -14,4 +14,4 @@ cd $WORK/projects/ebak/scripts/
 
 source activate ebak
 
-ibrun python demo-sampler.py -v --id="2M03080601+7950502" --mpi
+ibrun python run-sampler.py -v --id="2M03080601+7950502" --mpi -n 2**20
